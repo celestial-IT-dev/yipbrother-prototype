@@ -115,6 +115,7 @@ a { color: var(--primary); }
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   padding: 0.25rem;
+  background: var(--surface) !important;
 }
 
 .oms-navbar .dropdown-item {
@@ -125,6 +126,23 @@ a { color: var(--primary); }
 
 .oms-navbar .dropdown-item:hover {
   background: var(--surface-3);
+}
+
+/* Mobile navbar collapse backdrop fix */
+@media (max-width: 991px) {
+  .navbar-collapse {
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1rem;
+  }
+
+  .oms-navbar .dropdown-menu {
+    position: static !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0.25rem 0.5rem !important;
+  }
 }
 
 .brand-icon {

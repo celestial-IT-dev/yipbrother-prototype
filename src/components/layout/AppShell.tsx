@@ -1,17 +1,52 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import 'bootstrap/dist/js/bootstrap.bundle';
 import { useAuth } from '../../context/useAuth';
 import { ROLE_LABELS } from '../../lib/constants';
+
+declare global {
+  interface Window {
+    bootstrap: any;
+  }
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const collapseRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile navbar after clicking any dropdown item or outside the menu
+  useEffect(() => {
+    const collapseEl = collapseRef.current;
+    if (!collapseEl) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!collapseEl.contains(event.target as Node)) {
+        const bsCollapse = window.bootstrap.Collapse.getInstance(collapseEl);
+        if (bsCollapse && bsCollapse._isShown) {
+          bsCollapse.hide();
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   async function handleSignOut() {
     await signOut();
     navigate('/login');
+  }
+
+  function closeMobileNavbar() {
+    const collapseEl = collapseRef.current;
+    if (!collapseEl) return;
+    const bsCollapse = window.bootstrap.Collapse.getInstance(collapseEl);
+    if (bsCollapse && bsCollapse._isShown) {
+      bsCollapse.hide();
+    }
   }
 
   const navLinks = [
@@ -31,7 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <Navbar.Toggle aria-controls="main-nav" className="border-0 shadow-none" />
 
-          <Navbar.Collapse id="main-nav">
+          <Navbar.Collapse id="main-nav" ref={collapseRef}>
             <Nav className="me-auto ms-3 gap-1">
               {navLinks.map(({ to, label, match }) => (
                 <Nav.Link
@@ -65,7 +100,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     {profile.full_name}
                   </NavDropdown.Item>
                   <NavDropdown.Divider />
-                  <NavDropdown.Item onClick={handleSignOut} className="text-danger">
+                  <NavDropdown.Item onClick={() => { handleSignOut(); closeMobileNavbar(); }} className="text-danger">
                     Sign Out
                   </NavDropdown.Item>
                 </NavDropdown>
