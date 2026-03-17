@@ -66,7 +66,6 @@ export const TERMINAL_STATUSES: OrderStatus[] = [
 
 // Locked from editing — statuses after this point cannot be edited
 export const LOCKED_FROM_EDIT_STATUSES: OrderStatus[] = [
-  STATUSES.PENDING_PAYMENT,
   STATUSES.ORDER_RELEASED_TO_ENGINEERING,
   STATUSES.DESIGN_IN_PROGRESS,
   STATUSES.PENDING_DESIGN_APPROVAL,
