@@ -71,7 +71,7 @@ export default function DashboardPage() {
                 */}
                 {['Draft', 'Active', 'Overdue', 'On Hold', 'Completed', 'Cancelled'].map((status, idx) => (
                   <div key={status} className="d-flex align-items-start gap-2">
-                    <span style={{ fontSize: '1rem', lineHeight: 1.4 }}>{['📋', '⚡', '⏰', '⏸', '✅', '✗'][idx]}</span>
+                    <span style={{ fontSize: '1rem', lineHeight: 1.4 }}>{['', '', '', '', '', ''][idx]}</span>
                     <span style={{ fontSize: '0.875rem' }}>
                       <strong>{status}</strong>
                       <span style={{ color: 'var(--text-secondary)' }}>

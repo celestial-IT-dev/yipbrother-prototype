@@ -3,6 +3,7 @@ export const ROLES = {
   ADMIN: 'admin',
   ENGINEER: 'engineer',
   DESIGNER: 'designer',
+  PRODUCTION_ENGINEER: 'production_engineer',
   QA_QC: 'qa_qc',
 } as const;
 
@@ -13,6 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   admin: 'Admin',
   engineer: 'Engineer',
   designer: 'Designer',
+  production_engineer: 'Production Engineer',
   qa_qc: 'QA/QC Engineer',
 };
 

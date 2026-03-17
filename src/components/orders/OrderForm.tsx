@@ -62,9 +62,32 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
   } : empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    // Clear field error when user starts typing
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[e.target.name];
+        return newErrors;
+      });
+    }
+  }
+
+  function validateForm(): boolean {
+    const errors: Record<string, string> = {};
+    
+    if (!form.customer_name.trim()) {
+      errors.customer_name = 'Customer name is required.';
+    }
+    if (!form.target_completion_date.trim()) {
+      errors.target_completion_date = 'Target completion date is required.';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function generateOrderNumber() {
@@ -76,7 +99,14 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
   }
 
   async function handleSubmit(status: 'Draft' | 'submit') {
-    if (!form.customer_name.trim()) { setError('Customer name is required.'); return; }
+    if (status === 'submit' && !validateForm()) {
+      return;
+    }
+    if (status === 'Draft' && !form.customer_name.trim()) {
+      setFieldErrors({ customer_name: 'Customer name is required.' });
+      return;
+    }
+    
     setError('');
     setSaving(true);
     try {
@@ -121,37 +151,46 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
       {error && <Alert variant="danger">{error}</Alert>}
 
       <Card className="mb-3">
-        <Card.Header className="bg-primary text-white fw-semibold">Customer Information</Card.Header>
+        <Card.Header className="bg-primary text-dark fw-semibold">Customer Information</Card.Header>
         <Card.Body>
           <Row className="g-3">
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Customer Name <span className="text-danger">*</span></Form.Label>
-                <Form.Control name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="e.g. ABC Logistics Sdn Bhd" />
+                <Form.Control 
+                  name="customer_name" 
+                  value={form.customer_name} 
+                  onChange={handleChange} 
+                  placeholder="Customer Name"
+                  isInvalid={!!fieldErrors.customer_name}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {fieldErrors.customer_name}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Company Name</Form.Label>
-                <Form.Control name="company_name" value={form.company_name} onChange={handleChange} />
+                <Form.Control name="company_name" placeholder="Company Name" value={form.company_name} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Contact Person</Form.Label>
-                <Form.Control name="contact_person" value={form.contact_person} onChange={handleChange} />
+                <Form.Control name="contact_person" placeholder="Contact Person" value={form.contact_person} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Phone</Form.Label>
-                <Form.Control name="phone" value={form.phone} onChange={handleChange} />
+                <Form.Control name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Email</Form.Label>
-                <Form.Control name="email" type="email" value={form.email} onChange={handleChange} />
+                <Form.Control name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
               </Form.Group>
             </Col>
           </Row>
@@ -159,31 +198,31 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
       </Card>
 
       <Card className="mb-3">
-        <Card.Header className="bg-primary text-white fw-semibold">Vehicle / Chassis Information</Card.Header>
+        <Card.Header className="bg-primary text-dark fw-semibold">Vehicle / Chassis Information</Card.Header>
         <Card.Body>
           <Row className="g-3">
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Reg. No.</Form.Label>
-                <Form.Control name="vehicle_reg" value={form.vehicle_reg} onChange={handleChange} />
+                <Form.Control name="vehicle_reg" placeholder="Vehicle Registration Number" value={form.vehicle_reg} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Chassis Number</Form.Label>
-                <Form.Control name="chassis_number" value={form.chassis_number} onChange={handleChange} />
+                <Form.Control name="chassis_number" placeholder="Chassis Number" value={form.chassis_number} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Model</Form.Label>
-                <Form.Control name="vehicle_model" value={form.vehicle_model} onChange={handleChange} />
+                <Form.Control name="vehicle_model" placeholder="Vehicle Model" value={form.vehicle_model} onChange={handleChange} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Type</Form.Label>
-                <Form.Control name="vehicle_type" value={form.vehicle_type} onChange={handleChange} placeholder="e.g. Lorry, Truck" />
+                <Form.Control name="vehicle_type" placeholder="e.g. Lorry, Truck" value={form.vehicle_type} onChange={handleChange} />
               </Form.Group>
             </Col>
           </Row>
@@ -191,7 +230,7 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
       </Card>
 
       <Card className="mb-3">
-        <Card.Header className="bg-primary text-white fw-semibold">Manufacturing Information</Card.Header>
+        <Card.Header className="bg-primary text-dark fw-semibold">Manufacturing Information</Card.Header>
         <Card.Body>
           <Row className="g-3">
             <Col md={4}>
@@ -208,8 +247,17 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
             </Col>
             <Col md={4}>
               <Form.Group>
-                <Form.Label>Target Completion Date</Form.Label>
-                <Form.Control name="target_completion_date" type="date" value={form.target_completion_date} onChange={handleChange} />
+                <Form.Label>Target Completion Date <span className="text-danger">*</span></Form.Label>
+                <Form.Control 
+                  name="target_completion_date" 
+                  type="date" 
+                  value={form.target_completion_date} 
+                  onChange={handleChange}
+                  isInvalid={!!fieldErrors.target_completion_date}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {fieldErrors.target_completion_date}
+                </Form.Control.Feedback>
               </Form.Group>
             </Col>
             <Col md={6}>
@@ -229,7 +277,7 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
       </Card>
 
       <Card className="mb-4">
-        <Card.Header className="bg-primary text-white fw-semibold">Additional Information</Card.Header>
+        <Card.Header className="bg-primary text-dark fw-semibold">Additional Information</Card.Header>
         <Card.Body>
           <Form.Group>
             <Form.Label>Payment Remarks</Form.Label>
@@ -242,11 +290,11 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
         <Button variant="outline-secondary" onClick={() => navigate(-1)} disabled={saving}>Cancel</Button>
         {!orderId && (
           <Button variant="outline-primary" onClick={() => handleSubmit('Draft')} disabled={saving}>
-            💾 Save as Draft
+            Save as Draft
           </Button>
         )}
         <Button variant="primary" onClick={() => handleSubmit('submit')} disabled={saving}>
-          {saving ? 'Saving...' : orderId ? '✅ Update Order' : '🚀 Submit Order'}
+          {saving ? 'Saving...' : orderId ? 'Update Order' : 'Submit Order'}
         </Button>
       </div>
     </Form>

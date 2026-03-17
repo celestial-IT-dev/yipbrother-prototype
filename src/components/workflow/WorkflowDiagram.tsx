@@ -72,34 +72,35 @@ const WORKFLOW_STAGES = [
     role: 'engineer' as Role,
     icon: '🚦',
     desc: 'Waiting for production slot to open',
+    handoff: true,
   },
   {
     status: 'Production Started',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '🏭',
     desc: 'Shop floor production begins',
   },
   {
     status: 'Fabrication in Progress',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '⚙️',
     desc: 'Metal fabrication underway',
   },
   {
     status: 'Assembly in Progress',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '🔩',
     desc: 'Components being assembled',
   },
   {
     status: 'Painting in Progress',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '🎨',
     desc: 'Painting and finishing work',
   },
   {
     status: 'Installation in Progress',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '🛠️',
     desc: 'Fitting body onto vehicle chassis',
   },
@@ -156,6 +157,7 @@ const ROLE_COLORS: Record<string, string> = {
   admin: 'primary',
   engineer: 'success',
   designer: 'info',
+  production_engineer: 'success',
   qa_qc: 'warning',
 };
 
@@ -195,6 +197,7 @@ export default function WorkflowDiagram({ currentStatus }: Props) {
             : false;
           const isMyRole = profile?.role === stage.role ||
             (stage.role === 'engineer' && profile?.role === 'admin') ||
+            (stage.role === 'production_engineer' && profile?.role === 'admin') ||
             (stage.role === 'sales' && profile?.role === 'admin');
 
           return (
@@ -247,14 +250,14 @@ export default function WorkflowDiagram({ currentStatus }: Props) {
 
       {/* Exception statuses */}
       <Card className="mt-4 border-danger border-opacity-25">
-        <Card.Header className="bg-light fw-semibold text-danger">⚠️ Exception / Special Statuses</Card.Header>
+        <Card.Header className="bg-light fw-semibold text-dark">Exception / Special Statuses</Card.Header>
         <Card.Body>
           <Row className="g-2">
             {EXCEPTION_STAGES.map(e => (
               <Col xs={12} sm={6} key={e.status}>
                 <div className={`p-2 rounded border border-${e.color} border-opacity-50 h-100`}>
                   <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>
-                    {e.icon} <Badge bg={e.color} className="me-1" style={{ fontSize: '0.7rem' }}>{e.status}</Badge>
+                    <Badge bg={e.color} className="me-1" style={{ fontSize: '0.7rem' }}>{e.status}</Badge>
                   </div>
                   <div className="text-muted" style={{ fontSize: '0.78rem' }}>{e.desc}</div>
                 </div>

@@ -30,9 +30,10 @@ function getFileIcon(mime: string) {
 
 interface Props {
   orderId: string;
+  refreshTrigger?: number;
 }
 
-export default function AttachmentsPanel({ orderId }: Props) {
+export default function AttachmentsPanel({ orderId, refreshTrigger }: Props) {
   const { profile } = useAuth();
   const [attachments, setAttachments] = useState<OrderAttachment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,12 @@ export default function AttachmentsPanel({ orderId }: Props) {
       isActive = false;
     };
   }, [orderId]);
+
+  // Refresh attachments when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger === undefined) return;
+    void refreshAttachments();
+  }, [refreshTrigger]);
 
   async function refreshAttachments() {
     setLoading(true);
@@ -139,7 +146,7 @@ export default function AttachmentsPanel({ orderId }: Props) {
                     </p>
                     <small className="text-muted d-block">{formatFileSize(att.file_size)}</small>
                     {att.status_context && (
-                      <Badge bg="light" text="dark" className="mt-1" style={{ fontSize: '0.65rem' }}>
+                      <Badge bg="primary" text="white" className="mt-1" style={{ fontSize: '0.65rem' }}>
                         {att.status_context}
                       </Badge>
                     )}

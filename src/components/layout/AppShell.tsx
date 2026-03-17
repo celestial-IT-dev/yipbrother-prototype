@@ -33,14 +33,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <Navbar.Collapse id="main-nav">
             <Nav className="me-auto ms-3 gap-1">
-              {navLinks.map(({ to, label, icon, match }) => (
+              {navLinks.map(({ to, label, match }) => (
                 <Nav.Link
                   key={to}
                   as={Link}
                   to={to}
                   active={match(location.pathname)}
                 >
-                  {icon} {label}
+                  {label}
                 </Nav.Link>
               ))}
             </Nav>

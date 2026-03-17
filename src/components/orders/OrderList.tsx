@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Form, InputGroup, Button, Badge, Spinner, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/useAuth';
 import { STATUSES } from '../../lib/constants';
 import type { OrderStatus } from '../../lib/constants';
+import { canUserSeeOrder } from '../../lib/workflowRules';
 import StatusBadge from './StatusBadge';
 
 interface OrderListItem {
@@ -28,6 +30,7 @@ function buildQuery(statusFilter: string) {
 }
 
 export default function OrderList() {
+  const { profile } = useAuth();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -55,6 +58,12 @@ export default function OrderList() {
   }
 
   const filtered = orders.filter(o => {
+    // Check role-based visibility
+    if (profile && !canUserSeeOrder(o.current_status, profile.role)) {
+      return false;
+    }
+
+    // Check search filters
     const salespersonName = o.profiles?.[0]?.full_name || '';
     return (
       o.order_number.toLowerCase().includes(search.toLowerCase()) ||

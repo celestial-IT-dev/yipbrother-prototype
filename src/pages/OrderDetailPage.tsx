@@ -28,12 +28,12 @@ interface OrderUpdateData {
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return value ? (
+  return (
     <Col xs={12} sm={6} md={4} className="mb-3">
       <small className="text-muted d-block mb-1">{label}</small>
-      <span className="fw-semibold">{value}</span>
+      <span className="fw-semibold">{value || '—'}</span>
     </Col>
-  ) : null;
+  );
 }
 
 export default function OrderDetailPage() {
@@ -46,6 +46,7 @@ export default function OrderDetailPage() {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [attachmentRefresh, setAttachmentRefresh] = useState(0);
 
   // Separate non-effect loader used by handleStatusUpdate
   async function loadOrder() {
@@ -118,6 +119,8 @@ export default function OrderDetailPage() {
     setSuccessMsg(`Status updated to "${newStatus}" successfully.`);
     setTimeout(() => setSuccessMsg(''), 4000);
     await loadOrder();
+    // Trigger attachments refresh
+    setAttachmentRefresh(prev => prev + 1);
   }
 
   if (loading) {
@@ -297,7 +300,7 @@ export default function OrderDetailPage() {
             <Card className="info-card">
               <Card.Header className="info-card-header">📎 Attachments</Card.Header>
               <Card.Body className="p-4">
-                <AttachmentsPanel orderId={id!} />
+                <AttachmentsPanel orderId={id!} refreshTrigger={attachmentRefresh} />
               </Card.Body>
             </Card>
           </Tab.Pane>
@@ -340,6 +343,7 @@ export default function OrderDetailPage() {
         orderId={id!}
         currentStatus={order.current_status}
         allowedNextStatuses={allowedNext}
+        history={history}
         onConfirm={handleStatusUpdate}
         onHide={() => setShowModal(false)}
       />

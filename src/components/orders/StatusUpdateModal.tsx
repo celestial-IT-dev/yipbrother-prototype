@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
-import { MANDATORY_REMARK_STATUSES } from '../../lib/constants';
+import { MANDATORY_REMARK_STATUSES, STATUSES } from '../../lib/constants';
 import type { OrderStatus } from '../../lib/constants';
+import type { OrderHistoryEntry } from '../../lib/types';
+import { getPreviousStatusBeforeOnHold } from '../../lib/workflowRules';
+import { supabase } from '../../lib/supabaseClient';
 import StatusBadge from './StatusBadge';
 import FileUpload, { type UploadedFile } from './FileUpload';
 
@@ -14,20 +17,46 @@ interface Props {
   orderId: string;
   currentStatus: string;
   allowedNextStatuses: OrderStatus[];
+  history?: OrderHistoryEntry[];
   onConfirm: (newStatus: OrderStatus, remark: string) => Promise<void>;
   onHide: () => void;
 }
 
-export default function StatusUpdateModal({ show, orderId, currentStatus, allowedNextStatuses, onConfirm, onHide }: Props) {
+export default function StatusUpdateModal({ show, orderId, currentStatus, allowedNextStatuses, history = [], onConfirm, onHide }: Props) {
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | ''>('');
   const [remark, setRemark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const isOnHold = currentStatus === STATUSES.ON_HOLD;
+  const previousStatus = isOnHold ? getPreviousStatusBeforeOnHold(history) : null;
+  
+  const statuses = isOnHold && previousStatus
+    ? [previousStatus, STATUSES.CANCELLED]
+    : allowedNextStatuses;
 
   const requiresRemark = selectedStatus
     ? MANDATORY_REMARK_STATUSES.includes(selectedStatus as OrderStatus)
     : false;
+
+  async function handleDeleteFile(file: UploadedFile) {
+    if (!confirm(`Delete "${file.file_name}"?`)) return;
+    setDeleting(file.id);
+    try {
+      // Delete from storage
+      await supabase.storage.from('order-attachments').remove([file.storage_path]);
+      // Delete from database
+      await supabase.from('order_attachments').delete().eq('id', file.id);
+      // Remove from state
+      setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to delete file.'));
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   async function handleConfirm() {
     if (!selectedStatus) { setError('Please select a status.'); return; }
@@ -69,14 +98,21 @@ export default function StatusUpdateModal({ show, orderId, currentStatus, allowe
         </div>
 
         <Form.Group className="mb-3">
-          <Form.Label className="fw-semibold">Move to <span className="text-danger">*</span></Form.Label>
+          <Form.Label className="fw-semibold">
+            {isOnHold ? 'Resume to / Cancel' : 'Move to'} <span className="text-danger">*</span>
+          </Form.Label>
+          {isOnHold && !previousStatus && (
+            <Alert variant="warning" className="py-2 rounded-3 mb-3">
+              ⚠️ Unable to determine previous status. You can only cancel this order.
+            </Alert>
+          )}
           <Form.Select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value as OrderStatus)}
             className="form-select-modern"
           >
-            <option value="">— Select next status —</option>
-            {allowedNextStatuses.map(s => (
+            <option value="">— Select {isOnHold ? 'action' : 'next status'} —</option>
+            {statuses.map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </Form.Select>
@@ -110,9 +146,25 @@ export default function StatusUpdateModal({ show, orderId, currentStatus, allowe
               {uploadedFiles.length > 0 && (
                 <div className="mt-2">
                   {uploadedFiles.map(f => (
-                    <div key={f.id} className="d-flex align-items-center gap-2 py-1">
-                      <span className="text-success">✓</span>
-                      <small className="text-muted">{f.file_name}</small>
+                    <div key={f.id} className="d-flex align-items-center justify-content-between gap-2 py-2 px-2 border-bottom">
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="text-success">✓</span>
+                        <small className="text-muted">{f.file_name}</small>
+                      </div>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDeleteFile(f)}
+                        disabled={deleting !== null}
+                        className="py-0"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                      >
+                        {deleting === f.id ? (
+                          <><span className="spinner-border spinner-border-sm me-1" role="status" />Deleting...</>
+                        ) : (
+                          '✕ Delete'
+                        )}
+                      </Button>
                     </div>
                   ))}
                 </div>
