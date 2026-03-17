@@ -10,9 +10,17 @@
       
       // Store in sessionStorage for index.html to read
       sessionStorage.setItem('redirectPath', fullPath);
-      
-      // Redirect to index.html (will be served as the 404 response)
-      location.href = location.pathname.replace(/\/[^\/]+$/, '/index.html');
+
+      var segments = location.pathname.split('/').filter(Boolean);
+      var isGithubProjectSite = location.hostname.endsWith('github.io');
+      var appBase = isGithubProjectSite && segments.length > 0
+        ? '/' + segments[0] + '/'
+        : '/';
+      var target = appBase + 'index.html';
+
+      if (location.pathname !== target) {
+        location.replace(target);
+      }
     </script>
   </head>
   <body></body>

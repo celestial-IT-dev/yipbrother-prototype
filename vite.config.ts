@@ -16,13 +16,4 @@ export default defineConfig({
     // In local dev this will always be '/' regardless of any env variable.
     __BASE_PATH__: JSON.stringify(base),
   },
-  build: {
-    // Ensure 404.html is treated as an asset and copied to dist
-    rollupOptions: {
-      input: {
-        main: './index.html',
-        notfound: './public/404.html',
-      },
-    },
-  },
 })
