@@ -10,14 +10,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const collapseRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const navbarRef = useRef<HTMLElement>(null);
 
-  // Close mobile navbar after clicking any dropdown item or outside the menu
+  // Close mobile navbar after clicking outside the entire navbar component
   useEffect(() => {
-    const collapseEl = collapseRef.current;
-    if (!collapseEl) return;
+    const navbarEl = navbarRef.current;
+    if (!navbarEl) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (!collapseEl.contains(event.target as Node)) {
+      if (!navbarEl.contains(event.target as Node)) {
         // Trigger click on toggle button to close navbar
         toggleRef.current?.click();
       }
@@ -45,7 +46,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Navbar className="oms-navbar" expand="lg" sticky="top">
+      <Navbar ref={navbarRef} className="oms-navbar" expand="lg" sticky="top">
         <Container fluid="xl">
           <Navbar.Brand as={Link} to="/">
             <div className="brand-icon">🏭</div>
