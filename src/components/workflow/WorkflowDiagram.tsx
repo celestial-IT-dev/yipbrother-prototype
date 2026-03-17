@@ -69,7 +69,7 @@ const WORKFLOW_STAGES = [
   },
   {
     status: 'Pending to Start',
-    role: 'engineer' as Role,
+    role: 'production_engineer' as Role,
     icon: '🚦',
     desc: 'Waiting for production slot to open',
     handoff: true,

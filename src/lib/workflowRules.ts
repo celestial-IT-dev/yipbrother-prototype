@@ -1,4 +1,4 @@
-import { STATUSES, ROLES } from './constants';
+import { STATUSES, ROLES, ROLE_VISIBLE_STATUSES } from './constants';
 import type { OrderStatus, Role } from './constants';
 import type { OrderHistoryEntry } from './types';
 
@@ -37,7 +37,7 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   },
   [S.PENDING_DESIGN_APPROVAL]: {
     allowedNext: [S.MATERIAL_PLANNING, S.REJECTED_REVISION_REQUESTED, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER, R.DESIGNER],
+    allowedRoles: [R.ENGINEER],
   },
   [S.REJECTED_REVISION_REQUESTED]: {
     allowedNext: [S.DESIGN_IN_PROGRESS],
@@ -53,11 +53,11 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   },
   [S.MATERIALS_READY]: {
     allowedNext: [S.PENDING_TO_START, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER],
+    allowedRoles: [R.ENGINEER, R.PRODUCTION_ENGINEER],
   },
   [S.PENDING_TO_START]: {
     allowedNext: [S.PRODUCTION_STARTED, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER],
+    allowedRoles: [R.PRODUCTION_ENGINEER],
   },
   [S.PRODUCTION_STARTED]: {
     allowedNext: [S.FABRICATION_IN_PROGRESS, S.ON_HOLD],
@@ -148,98 +148,9 @@ export function canUserSeeOrder(currentStatus: string, userRole: Role): boolean 
   // Sales and Admin can see all orders at all times
   if (userRole === R.SALES || userRole === R.ADMIN) return true;
 
-  // Engineer can see orders from "Order Released to Engineering" onwards
-  if (userRole === R.ENGINEER) {
-    const engineeringStages: OrderStatus[] = [
-      S.ORDER_RELEASED_TO_ENGINEERING,
-      S.DESIGN_IN_PROGRESS,
-      S.PENDING_DESIGN_APPROVAL,
-      S.MATERIAL_PLANNING,
-      S.WAITING_FOR_MATERIALS,
-      S.MATERIALS_READY,
-      S.PENDING_TO_START,
-      S.ON_HOLD,
-      S.REJECTED_REVISION_REQUESTED,
-      // Production stages onwards are also visible
-      S.PRODUCTION_STARTED,
-      S.FABRICATION_IN_PROGRESS,
-      S.ASSEMBLY_IN_PROGRESS,
-      S.PAINTING_IN_PROGRESS,
-      S.INSTALLATION_IN_PROGRESS,
-      S.QUALITY_INSPECTION,
-      S.READY_FOR_DELIVERY,
-      S.INQUIRE_DELIVERY_METHOD,
-      S.PENDING_FINAL_PAYMENT,
-      S.SIGN_OFF,
-      S.COMPLETED_CLOSED,
-    ];
-    return engineeringStages.includes(currentStatus as OrderStatus);
-  }
-
-  // Designer can see orders from "Order Released to Engineering" onwards (design stages)
-  if (userRole === R.DESIGNER) {
-    const designerStages: OrderStatus[] = [
-      S.ORDER_RELEASED_TO_ENGINEERING,
-      S.DESIGN_IN_PROGRESS,
-      S.PENDING_DESIGN_APPROVAL,
-      S.REJECTED_REVISION_REQUESTED,
-      S.MATERIAL_PLANNING,
-      S.WAITING_FOR_MATERIALS,
-      S.MATERIALS_READY,
-      S.PENDING_TO_START,
-      S.ON_HOLD,
-      // Production onwards
-      S.PRODUCTION_STARTED,
-      S.FABRICATION_IN_PROGRESS,
-      S.ASSEMBLY_IN_PROGRESS,
-      S.PAINTING_IN_PROGRESS,
-      S.INSTALLATION_IN_PROGRESS,
-      S.QUALITY_INSPECTION,
-      S.READY_FOR_DELIVERY,
-      S.INQUIRE_DELIVERY_METHOD,
-      S.PENDING_FINAL_PAYMENT,
-      S.SIGN_OFF,
-      S.COMPLETED_CLOSED,
-    ];
-    return designerStages.includes(currentStatus as OrderStatus);
-  }
-
-  // Production Engineer can see orders from "Pending to Start" onwards
-  if (userRole === R.PRODUCTION_ENGINEER) {
-    const productionStages: OrderStatus[] = [
-      S.PENDING_TO_START,
-      S.PRODUCTION_STARTED,
-      S.FABRICATION_IN_PROGRESS,
-      S.ASSEMBLY_IN_PROGRESS,
-      S.PAINTING_IN_PROGRESS,
-      S.INSTALLATION_IN_PROGRESS,
-      S.QUALITY_INSPECTION,
-      S.REWORK_REQUIRED,
-      S.READY_FOR_DELIVERY,
-      S.INQUIRE_DELIVERY_METHOD,
-      S.PENDING_FINAL_PAYMENT,
-      S.SIGN_OFF,
-      S.COMPLETED_CLOSED,
-      S.ON_HOLD,
-    ];
-    return productionStages.includes(currentStatus as OrderStatus);
-  }
-
-  // QA/QC can see orders from "Quality Inspection" onwards
-  if (userRole === R.QA_QC) {
-    const qaqcStages: OrderStatus[] = [
-      S.QUALITY_INSPECTION,
-      S.REWORK_REQUIRED,
-      S.READY_FOR_DELIVERY,
-      S.INQUIRE_DELIVERY_METHOD,
-      S.PENDING_FINAL_PAYMENT,
-      S.SIGN_OFF,
-      S.COMPLETED_CLOSED,
-      S.ON_HOLD,
-    ];
-    return qaqcStages.includes(currentStatus as OrderStatus);
-  }
-
-  return false;
+  // For all other roles, check against ROLE_VISIBLE_STATUSES
+  const visibleStatuses = ROLE_VISIBLE_STATUSES[userRole];
+  if (!visibleStatuses) return false;
+  return visibleStatuses.includes(currentStatus as OrderStatus);
 }
 
