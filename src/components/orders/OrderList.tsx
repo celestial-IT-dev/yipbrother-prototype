@@ -135,64 +135,116 @@ export default function OrderList() {
             <p className="mt-2 mb-0">No orders found</p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table orders-table mb-0">
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Customer</th>
-                  <th>Body Type</th>
-                  <th>Salesperson</th>
-                  <th>Status</th>
-                  <th>Target Date</th>
-                  <th style={{ width: 80 }}></th>
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            <div className="d-md-none p-3">
+              <div className="d-flex flex-column gap-3">
                 {filtered.map(order => (
-                  <tr key={order.id} className={isOverdue(order) ? 'overdue-row' : ''}>
-                    <td>
-                      <Link
-                        to={`/orders/${order.id}`}
-                        className="fw-semibold text-decoration-none"
-                        style={{ color: 'var(--primary)' }}
-                      >
-                        {order.order_number}
-                      </Link>
-                      {isOverdue(order) && (
-                        <Badge bg="danger" className="ms-2 pill-badge">Overdue</Badge>
-                      )}
-                    </td>
-                    <td>
-                      <div className="fw-semibold" style={{ fontSize: '0.875rem' }}>{order.customer_name}</div>
-                    </td>
-                    <td>
-                      <span style={{ color: 'var(--text-secondary)' }}>{order.body_type || '—'}</span>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '0.875rem' }}>
-                        <div className="fw-semibold">{order.profiles?.full_name || '—'}</div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{order.profiles?.email || '—'}</div>
+                  <Card key={order.id} className={`shadow-sm border-0 ${isOverdue(order) ? 'border-start border-4 border-danger' : ''}`}>
+                    <Card.Body className="p-3">
+                      <div className="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                          <Link
+                            to={`/orders/${order.id}`}
+                            className="fw-semibold text-decoration-none"
+                            style={{ color: 'var(--primary)' }}
+                          >
+                            {order.order_number}
+                          </Link>
+                          <div className="mt-1 fw-semibold" style={{ fontSize: '0.9rem' }}>{order.customer_name}</div>
+                        </div>
+                        <StatusBadge status={order.current_status} size="sm" />
                       </div>
-                    </td>
-                    <td><StatusBadge status={order.current_status} size="sm" /></td>
-                    <td style={{ color: 'var(--text-secondary)' }}>
-                      {order.target_completion_date
-                        ? new Date(order.target_completion_date).toLocaleDateString()
-                        : '—'}
-                    </td>
-                    <td>
-                      <Link to={`/orders/${order.id}`}>
-                        <Button size="sm" variant="outline-primary" className="btn-modern" style={{ padding: '0.25rem 0.75rem' }}>
-                          View
-                        </Button>
-                      </Link>
-                    </td>
-                  </tr>
+
+                      <div className="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                        {isOverdue(order) && <Badge bg="danger" className="pill-badge">Overdue</Badge>}
+                        <Badge bg="light" text="dark">{order.body_type || 'No body type'}</Badge>
+                      </div>
+
+                      <div className="mt-3" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        <div>
+                          <span className="fw-semibold">Target:</span>{' '}
+                          {order.target_completion_date
+                            ? new Date(order.target_completion_date).toLocaleDateString()
+                            : '—'}
+                        </div>
+                        <div className="mt-1">
+                          <span className="fw-semibold">Salesperson:</span>{' '}
+                          {order.profiles?.full_name || '—'}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 d-flex justify-content-end">
+                        <Link to={`/orders/${order.id}`}>
+                          <Button size="sm" variant="outline-primary" className="btn-modern" style={{ padding: '0.25rem 0.75rem' }}>
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </Card.Body>
+                  </Card>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+
+            <div className="d-none d-md-block table-responsive">
+              <table className="table orders-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Body Type</th>
+                    <th>Salesperson</th>
+                    <th>Status</th>
+                    <th>Target Date</th>
+                    <th style={{ width: 80 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(order => (
+                    <tr key={order.id} className={isOverdue(order) ? 'overdue-row' : ''}>
+                      <td>
+                        <Link
+                          to={`/orders/${order.id}`}
+                          className="fw-semibold text-decoration-none"
+                          style={{ color: 'var(--primary)' }}
+                        >
+                          {order.order_number}
+                        </Link>
+                        {isOverdue(order) && (
+                          <Badge bg="danger" className="ms-2 pill-badge">Overdue</Badge>
+                        )}
+                      </td>
+                      <td>
+                        <div className="fw-semibold" style={{ fontSize: '0.875rem' }}>{order.customer_name}</div>
+                      </td>
+                      <td>
+                        <span style={{ color: 'var(--text-secondary)' }}>{order.body_type || '—'}</span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.875rem' }}>
+                          <div className="fw-semibold">{order.profiles?.full_name || '—'}</div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{order.profiles?.email || '—'}</div>
+                        </div>
+                      </td>
+                      <td><StatusBadge status={order.current_status} size="sm" /></td>
+                      <td style={{ color: 'var(--text-secondary)' }}>
+                        {order.target_completion_date
+                          ? new Date(order.target_completion_date).toLocaleDateString()
+                          : '—'}
+                      </td>
+                      <td>
+                        <Link to={`/orders/${order.id}`}>
+                          <Button size="sm" variant="outline-primary" className="btn-modern" style={{ padding: '0.25rem 0.75rem' }}>
+                            View
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
     </div>
