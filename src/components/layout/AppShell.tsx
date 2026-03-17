@@ -1,21 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import 'bootstrap/dist/js/bootstrap.bundle';
 import { useAuth } from '../../context/useAuth';
 import { ROLE_LABELS } from '../../lib/constants';
-
-declare global {
-  interface Window {
-    bootstrap: any;
-  }
-}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const collapseRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   // Close mobile navbar after clicking any dropdown item or outside the menu
   useEffect(() => {
@@ -24,10 +18,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const handleClickOutside = (event: MouseEvent) => {
       if (!collapseEl.contains(event.target as Node)) {
-        const bsCollapse = window.bootstrap.Collapse.getInstance(collapseEl);
-        if (bsCollapse && bsCollapse._isShown) {
-          bsCollapse.hide();
-        }
+        // Trigger click on toggle button to close navbar
+        toggleRef.current?.click();
       }
     };
 
@@ -41,12 +33,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   function closeMobileNavbar() {
-    const collapseEl = collapseRef.current;
-    if (!collapseEl) return;
-    const bsCollapse = window.bootstrap.Collapse.getInstance(collapseEl);
-    if (bsCollapse && bsCollapse._isShown) {
-      bsCollapse.hide();
-    }
+    // Trigger click on toggle button to close navbar
+    toggleRef.current?.click();
   }
 
   const navLinks = [
@@ -64,7 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <span>Yip Brother <span style={{ fontWeight: 400, opacity: 0.6 }}>OMS</span></span>
           </Navbar.Brand>
 
-          <Navbar.Toggle aria-controls="main-nav" className="border-0 shadow-none" />
+          <Navbar.Toggle ref={toggleRef} aria-controls="main-nav" className="border-0 shadow-none" />
 
           <Navbar.Collapse id="main-nav" ref={collapseRef}>
             <Nav className="me-auto ms-3 gap-1">
