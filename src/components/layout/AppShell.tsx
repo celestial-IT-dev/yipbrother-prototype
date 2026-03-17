@@ -12,22 +12,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navbarRef = useRef<HTMLElement>(null);
 
-  // Close mobile navbar after clicking outside the entire navbar component
-  useEffect(() => {
-    const navbarEl = navbarRef.current;
-    if (!navbarEl) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!navbarEl.contains(event.target as Node)) {
-        // Trigger click on toggle button to close navbar
-        toggleRef.current?.click();
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
   async function handleSignOut() {
     await signOut();
     navigate('/login');
