@@ -4,16 +4,15 @@
     <meta charset="utf-8" />
     <title>Single Page App</title>
     <script type="text/javascript">
-      // Get the path including query string
-      var pathSegments = location.pathname.split('/').filter(Boolean);
-      var repoName = pathSegments[0];
-      var path = '/' + pathSegments.slice(1).join('/');
-      if (!path || path === '/') path = '';
+      // Store the full pathname and search params
+      // location.pathname includes the full path like /yipbrother-prototype/login
+      var fullPath = location.pathname + (location.search || '') + (location.hash || '');
       
-      // Redirect to the app's index.html with the original path preserved
-      // This allows the React Router to handle the route
-      sessionStorage.redirect = path + (location.search || '');
-      location.href = '/' + repoName + '/index.html';
+      // Store in sessionStorage for index.html to read
+      sessionStorage.setItem('redirectPath', fullPath);
+      
+      // Redirect to index.html (will be served as the 404 response)
+      location.href = location.pathname.replace(/\/[^\/]+$/, '/index.html');
     </script>
   </head>
   <body></body>
