@@ -37,7 +37,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        {profile?.role === ROLES.SALES || profile?.role === ROLES.ADMIN && (
+        {(profile?.role === ROLES.SALES || profile?.role === ROLES.ADMIN) && (
           <Link to="/orders/new" className="btn btn-primary btn-modern">
             + New Order
           </Link>
