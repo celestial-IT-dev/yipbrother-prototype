@@ -7,8 +7,8 @@ import OrderForm from '../components/orders/OrderForm';
 export default function NewOrderPage() {
   const { profile, loading } = useAuth();
 
-  // Only Sales can create orders
-  if (!loading && profile?.role !== ROLES.SALES) {
+  // Only Sales and Admin can create orders
+  if (!loading && profile?.role !== ROLES.SALES && profile?.role !== ROLES.ADMIN) {
     return <Navigate to="/orders" replace />;
   }
 

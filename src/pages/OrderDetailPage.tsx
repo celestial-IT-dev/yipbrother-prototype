@@ -270,12 +270,12 @@ export default function OrderDetailPage() {
                           ? new Date(order.target_completion_date).toLocaleDateString()
                           : null}
                       />
-                      <InfoRow label="Initial Payment" value={order.initial_payment_status} />
-                      <InfoRow label="Final Payment" value={order.final_payment_status} />
-                      <InfoRow label="Invoice Ref." value={order.invoice_reference} />
+                      {/* <InfoRow label="Initial Payment" value={order.initial_payment_status} />
+                      <InfoRow label="Final Payment" value={order.final_payment_status} /> 
+                      <InfoRow label="Invoice Ref." value={order.invoice_reference} />*/}
                       <InfoRow label="Payment Remarks" value={order.payment_remarks} />
-                      <InfoRow label="Delivery Method" value={order.delivery_method} />
-                      <InfoRow label="Delivery Remarks" value={order.delivery_remarks} />
+                      {/* <InfoRow label="Delivery Method" value={order.delivery_method} />
+                      <InfoRow label="Delivery Remarks" value={order.delivery_remarks} /> */}
                     </Row>
                   </Card.Body>
                 </Card>

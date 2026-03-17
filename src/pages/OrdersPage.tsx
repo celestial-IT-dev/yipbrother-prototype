@@ -14,7 +14,7 @@ export default function OrdersPage() {
           <div className="page-title">Orders</div>
           <div className="page-subtitle">Manage and track all customer orders</div>
         </div>
-        {profile?.role === ROLES.SALES && (
+        {profile?.role === ROLES.SALES || profile?.role === ROLES.ADMIN && (
           <Link to="/orders/new" className="btn btn-primary btn-modern">
             + New Order
           </Link>
