@@ -150,7 +150,7 @@ export function canUserSeeOrder(currentStatus: string, userRole: Role): boolean 
 
   // Engineer can see orders from "Order Released to Engineering" onwards
   if (userRole === R.ENGINEER) {
-    const engineeringStages = [
+    const engineeringStages: OrderStatus[] = [
       S.ORDER_RELEASED_TO_ENGINEERING,
       S.DESIGN_IN_PROGRESS,
       S.PENDING_DESIGN_APPROVAL,
@@ -178,7 +178,7 @@ export function canUserSeeOrder(currentStatus: string, userRole: Role): boolean 
 
   // Designer can see orders from "Order Released to Engineering" onwards (design stages)
   if (userRole === R.DESIGNER) {
-    const designerStages = [
+    const designerStages: OrderStatus[] = [
       S.ORDER_RELEASED_TO_ENGINEERING,
       S.DESIGN_IN_PROGRESS,
       S.PENDING_DESIGN_APPROVAL,
@@ -206,7 +206,7 @@ export function canUserSeeOrder(currentStatus: string, userRole: Role): boolean 
 
   // Production Engineer can see orders from "Pending to Start" onwards
   if (userRole === R.PRODUCTION_ENGINEER) {
-    const productionStages = [
+    const productionStages: OrderStatus[] = [
       S.PENDING_TO_START,
       S.PRODUCTION_STARTED,
       S.FABRICATION_IN_PROGRESS,
@@ -227,7 +227,7 @@ export function canUserSeeOrder(currentStatus: string, userRole: Role): boolean 
 
   // QA/QC can see orders from "Quality Inspection" onwards
   if (userRole === R.QA_QC) {
-    const qaqcStages = [
+    const qaqcStages: OrderStatus[] = [
       S.QUALITY_INSPECTION,
       S.REWORK_REQUIRED,
       S.READY_FOR_DELIVERY,
