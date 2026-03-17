@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Single Page App</title>
+    <script type="text/javascript">
+      // Get the path including query string
+      var pathSegments = location.pathname.split('/').filter(Boolean);
+      var repoName = pathSegments[0];
+      var path = '/' + pathSegments.slice(1).join('/');
+      if (!path || path === '/') path = '';
+      
+      // Redirect to the app's index.html with the original path preserved
+      // This allows the React Router to handle the route
+      sessionStorage.redirect = path + (location.search || '');
+      location.href = '/' + repoName + '/index.html';
+    </script>
+  </head>
+  <body></body>
+</html>
