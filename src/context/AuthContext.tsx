@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { User, Session, AuthAction } from '@supabase/supabase-js';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import type { Profile } from '../lib/types';
 import { AuthContext } from './authContextValue';
@@ -56,16 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthAction, session: Session | null) => {
-      console.log('AuthContext: Auth state changed:', session ? 'Logged in' : 'Logged out');
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        void fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        console.log('AuthContext: Auth state changed:', session ? 'Logged in' : 'Logged out');
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          void fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
-    });
+    );
 
     return () => { 
       console.log('AuthContext: Cleanup - unsubscribing');
