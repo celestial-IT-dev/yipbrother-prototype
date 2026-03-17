@@ -11,27 +11,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
 
-    setProfile(data as Profile | null);
-    setLoading(false);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        setProfile(null);
+      } else {
+        setProfile(data as Profile | null);
+      }
+    } catch (err) {
+      console.error('Exception fetching profile:', err);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('AuthContext: Initializing authentication...');
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('AuthContext: Error getting session:', error);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('AuthContext: Session retrieved:', session ? 'Found' : 'None');
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('AuthContext: Fetching profile for user:', session.user.id);
         void fetchProfile(session.user.id);
       } else {
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error('AuthContext: Failed to get session:', error);
+      setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session, error) => {
+      if (error) {
+        console.error('AuthContext: Auth state change error:', error);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('AuthContext: Auth state changed:', session ? 'Logged in' : 'Logged out');
       setUser(session?.user ?? null);
       if (session?.user) {
         void fetchProfile(session.user.id);
@@ -41,7 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => { 
+      console.log('AuthContext: Cleanup - unsubscribing');
+      subscription.unsubscribe(); 
+    };
   }, []);
 
   async function signIn(email: string, password: string) {

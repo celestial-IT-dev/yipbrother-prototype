@@ -64,8 +64,12 @@ export default function OrderDetailPage() {
   }
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      console.log('OrderDetailPage: No ID provided');
+      return;
+    }
 
+    console.log('OrderDetailPage: Loading order with ID:', id);
     let active = true;
 
     Promise.all([
@@ -74,14 +78,41 @@ export default function OrderDetailPage() {
         .select('*, profiles(full_name, role)')
         .eq('order_id', id)
         .order('created_at', { ascending: true }),
-    ]).then(([{ data: ord }, { data: hist }]) => {
+    ])
+    .then(async ([{ data: ord, error: ordErr }, { data: hist, error: histErr }]) => {
       if (!active) return;
-      setOrder((ord as Order | null) ?? null);
+      
+      if (ordErr) {
+        console.error('Order fetch error:', ordErr);
+        throw ordErr;
+      }
+      
+      if (histErr) {
+        console.error('History fetch error:', histErr);
+        // Don't throw, just log - history can be empty
+      }
+      
+      console.log('Order fetched:', ord ? 'Found' : 'Not found');
+      setOrder(ord as Order | null);
       setHistory((hist as OrderHistoryEntry[]) || []);
-      setLoading(false);
+    })
+    .catch((err) => {
+      if (!active) return;
+      console.error('Error loading order:', err);
+      setError(`Failed to load order details: ${err.message}`);
+      setOrder(null);
+    })
+    .finally(() => {
+      if (active) {
+        console.log('OrderDetailPage: Loading complete');
+        setLoading(false);
+      }
     });
 
-    return () => { active = false; };
+    return () => { 
+      active = false; 
+      console.log('OrderDetailPage: Cleanup - component unmounted');
+    };
   }, [id]);
 
 
