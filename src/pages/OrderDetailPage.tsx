@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/useAuth';
-import { STATUSES, TERMINAL_STATUSES } from '../lib/constants';
+import { STATUSES, TERMINAL_STATUSES, LOCKED_FROM_EDIT_STATUSES } from '../lib/constants';
 import type { OrderStatus } from '../lib/constants';
 import type { Order, OrderHistoryEntry } from '../lib/types';
 import { getAllowedNextStatuses, canUserUpdateStatus } from '../lib/workflowRules';
@@ -159,9 +159,6 @@ export default function OrderDetailPage() {
           <div className="d-flex flex-wrap align-items-center gap-2">
             <StatusBadge status={order.current_status} />
             {isOverdue && <Badge bg="danger" className="pill-badge">⏰ Overdue</Badge>}
-            {order.current_status === STATUSES.ON_HOLD && (
-              <Badge bg="dark" className="pill-badge">⏸ On Hold</Badge>
-            )}
           </div>
           <div className="mt-2">
             <small className="text-muted">Customer: <strong>{order.customer_name}</strong></small>
@@ -171,7 +168,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="d-flex gap-2 flex-wrap align-items-start">
-          {!isTerminal && (
+          {!isTerminal && !LOCKED_FROM_EDIT_STATUSES.includes(order.current_status as any) && (
             <Link to={`/orders/${id}/edit`}>
               <Button variant="outline-secondary" size="sm" className="btn-modern">✏️ Edit</Button>
             </Link>

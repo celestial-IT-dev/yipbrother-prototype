@@ -3,7 +3,7 @@ import { Form, Button, Row, Col, Alert, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/useAuth';
-import { STATUSES } from '../../lib/constants';
+import { STATUSES, LOCKED_FROM_EDIT_STATUSES } from '../../lib/constants';
 import type { Order } from '../../lib/types';
 
 interface OrderFormData {
@@ -63,6 +63,9 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Check if order is locked from editing
+  const isLocked = existingOrder ? LOCKED_FROM_EDIT_STATUSES.includes(existingOrder.current_status as any) : false;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -149,6 +152,13 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
   return (
     <Form>
       {error && <Alert variant="danger">{error}</Alert>}
+      
+      {isLocked && (
+        <Alert variant="info" className="mb-4">
+          <strong>Order Locked:</strong> This order cannot be edited because it has reached the "{existingOrder?.current_status}" status. 
+          Orders cannot be edited after "Pending Payment" status. Please contact support if you need to make changes.
+        </Alert>
+      )}
 
       <Card className="mb-3">
         <Card.Header className="bg-primary text-dark fw-semibold">Customer Information</Card.Header>
@@ -163,6 +173,7 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
                   onChange={handleChange} 
                   placeholder="Customer Name"
                   isInvalid={!!fieldErrors.customer_name}
+                  disabled={isLocked}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fieldErrors.customer_name}
@@ -172,25 +183,25 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Company Name</Form.Label>
-                <Form.Control name="company_name" placeholder="Company Name" value={form.company_name} onChange={handleChange} />
+                <Form.Control name="company_name" placeholder="Company Name" value={form.company_name} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Contact Person</Form.Label>
-                <Form.Control name="contact_person" placeholder="Contact Person" value={form.contact_person} onChange={handleChange} />
+                <Form.Control name="contact_person" placeholder="Contact Person" value={form.contact_person} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Phone</Form.Label>
-                <Form.Control name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} />
+                <Form.Control name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Email</Form.Label>
-                <Form.Control name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
+                <Form.Control name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
           </Row>
@@ -204,25 +215,25 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Reg. No.</Form.Label>
-                <Form.Control name="vehicle_reg" placeholder="Vehicle Registration Number" value={form.vehicle_reg} onChange={handleChange} />
+                <Form.Control name="vehicle_reg" placeholder="Vehicle Registration Number" value={form.vehicle_reg} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Chassis Number</Form.Label>
-                <Form.Control name="chassis_number" placeholder="Chassis Number" value={form.chassis_number} onChange={handleChange} />
+                <Form.Control name="chassis_number" placeholder="Chassis Number" value={form.chassis_number} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Model</Form.Label>
-                <Form.Control name="vehicle_model" placeholder="Vehicle Model" value={form.vehicle_model} onChange={handleChange} />
+                <Form.Control name="vehicle_model" placeholder="Vehicle Model" value={form.vehicle_model} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={3}>
               <Form.Group>
                 <Form.Label>Vehicle Type</Form.Label>
-                <Form.Control name="vehicle_type" placeholder="e.g. Lorry, Truck" value={form.vehicle_type} onChange={handleChange} />
+                <Form.Control name="vehicle_type" placeholder="e.g. Lorry, Truck" value={form.vehicle_type} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
           </Row>
@@ -236,13 +247,13 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Body Type</Form.Label>
-                <Form.Control name="body_type" value={form.body_type} onChange={handleChange} placeholder="e.g. Flatbed, Box, Tipper" />
+                <Form.Control name="body_type" value={form.body_type} onChange={handleChange} placeholder="e.g. Flatbed, Box, Tipper" disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Dimensions</Form.Label>
-                <Form.Control name="dimensions" value={form.dimensions} onChange={handleChange} placeholder="e.g. 20ft x 8ft x 7ft" />
+                <Form.Control name="dimensions" value={form.dimensions} onChange={handleChange} placeholder="e.g. 20ft x 8ft x 7ft" disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={4}>
@@ -254,6 +265,7 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
                   value={form.target_completion_date} 
                   onChange={handleChange}
                   isInvalid={!!fieldErrors.target_completion_date}
+                  disabled={isLocked}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fieldErrors.target_completion_date}
@@ -263,13 +275,13 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Special Requirements</Form.Label>
-                <Form.Control as="textarea" rows={2} name="special_requirements" value={form.special_requirements} onChange={handleChange} />
+                <Form.Control as="textarea" rows={2} name="special_requirements" value={form.special_requirements} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group>
                 <Form.Label>Production Notes</Form.Label>
-                <Form.Control as="textarea" rows={2} name="production_notes" value={form.production_notes} onChange={handleChange} />
+                <Form.Control as="textarea" rows={2} name="production_notes" value={form.production_notes} onChange={handleChange} disabled={isLocked} />
               </Form.Group>
             </Col>
           </Row>
@@ -281,7 +293,7 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
         <Card.Body>
           <Form.Group>
             <Form.Label>Payment Remarks</Form.Label>
-            <Form.Control as="textarea" rows={2} name="payment_remarks" value={form.payment_remarks} onChange={handleChange} />
+            <Form.Control as="textarea" rows={2} name="payment_remarks" value={form.payment_remarks} onChange={handleChange} disabled={isLocked} />
           </Form.Group>
         </Card.Body>
       </Card>
@@ -289,11 +301,11 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
       <div className="d-flex gap-2 justify-content-end flex-wrap">
         <Button variant="outline-secondary" onClick={() => navigate(-1)} disabled={saving}>Cancel</Button>
         {!orderId && (
-          <Button variant="outline-primary" onClick={() => handleSubmit('Draft')} disabled={saving}>
+          <Button variant="outline-primary" onClick={() => handleSubmit('Draft')} disabled={saving || isLocked}>
             Save as Draft
           </Button>
         )}
-        <Button variant="primary" onClick={() => handleSubmit('submit')} disabled={saving}>
+        <Button variant="primary" onClick={() => handleSubmit('submit')} disabled={saving || isLocked}>
           {saving ? 'Saving...' : orderId ? 'Update Order' : 'Submit Order'}
         </Button>
       </div>

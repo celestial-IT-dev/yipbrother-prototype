@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import SummaryCards from '../components/dashboard/SummaryCards';
 import StatusBreakdownTable from '../components/dashboard/StatusBreakdownTable';
 import { useAuth } from '../context/useAuth';
-import { ROLE_LABELS } from '../lib/constants';
+import { ROLE_LABELS, ROLES } from '../lib/constants';
 
 export default function DashboardPage() {
   const { profile } = useAuth();
@@ -37,9 +37,11 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        <Link to="/orders/new" className="btn btn-primary btn-modern">
-          + New Order
-        </Link>
+        {profile?.role === ROLES.SALES && (
+          <Link to="/orders/new" className="btn btn-primary btn-modern">
+            + New Order
+          </Link>
+        )}
       </div>
 
       <SummaryCards />

@@ -3,7 +3,7 @@ import { Form, InputGroup, Button, Badge, Spinner, Card } from 'react-bootstrap'
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/useAuth';
-import { STATUSES } from '../../lib/constants';
+import { STATUSES, ROLES } from '../../lib/constants';
 import type { OrderStatus } from '../../lib/constants';
 import { canUserSeeOrder } from '../../lib/workflowRules';
 import StatusBadge from './StatusBadge';
@@ -16,21 +16,29 @@ interface OrderListItem {
   body_type: string | null;
   target_completion_date: string | null;
   created_at: string;
-  profiles: { full_name: string }[] | null;
+  salesperson_id: string | null;
+  profiles?: { full_name: string; email?: string } | null;
 }
 
-function buildQuery(statusFilter: string) {
+function buildQuery(statusFilter: string, userRole: string | undefined, userId: string | undefined) {
   let q = supabase
     .from('orders')
-    .select('id, order_number, customer_name, current_status, body_type, target_completion_date, created_at, profiles(full_name)')
+    .select('id, order_number, customer_name, current_status, body_type, target_completion_date, created_at, salesperson_id, profiles!salesperson_id(full_name, email)')
     .eq('is_archived', false)
     .order('created_at', { ascending: false });
+  
   if (statusFilter) q = q.eq('current_status', statusFilter);
+  
+  // For sales users, only show their own orders
+  if (userRole === ROLES.SALES && userId) {
+    q = q.eq('salesperson_id', userId);
+  }
+  
   return q;
 }
 
 export default function OrderList() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,20 +47,20 @@ export default function OrderList() {
   // Initial load and re-load when statusFilter changes
   useEffect(() => {
     let active = true;
-
-    buildQuery(statusFilter).then(({ data, error }) => {
+    
+    buildQuery(statusFilter, profile?.role, user?.id).then(({ data, error }) => {
       if (!active) return;
       if (!error && data) setOrders(data as unknown as OrderListItem[]);
       setLoading(false);
     });
 
     return () => { active = false; };
-  }, [statusFilter]);
+  }, [statusFilter, profile?.role, user?.id]);
 
   // Called directly from event handlers (not from an effect)
   async function applyFilter(nextFilter: string) {
     setLoading(true);
-    const { data, error } = await buildQuery(nextFilter);
+    const { data, error } = await buildQuery(nextFilter, profile?.role, user?.id);
     if (!error && data) setOrders(data as unknown as OrderListItem[]);
     setLoading(false);
   }
@@ -64,7 +72,7 @@ export default function OrderList() {
     }
 
     // Check search filters
-    const salespersonName = o.profiles?.[0]?.full_name || '';
+    const salespersonName = o.profiles?.full_name || '';
     return (
       o.order_number.toLowerCase().includes(search.toLowerCase()) ||
       o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -162,7 +170,10 @@ export default function OrderList() {
                       <span style={{ color: 'var(--text-secondary)' }}>{order.body_type || '—'}</span>
                     </td>
                     <td>
-                      <span style={{ color: 'var(--text-secondary)' }}>{order.profiles?.[0]?.full_name || '—'}</span>
+                      <div style={{ fontSize: '0.875rem' }}>
+                        <div className="fw-semibold">{order.profiles?.full_name || '—'}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{order.profiles?.email || '—'}</div>
+                      </div>
                     </td>
                     <td><StatusBadge status={order.current_status} size="sm" /></td>
                     <td style={{ color: 'var(--text-secondary)' }}>

@@ -4,6 +4,7 @@ export interface Profile {
   id: string;
   full_name: string;
   role: Role;
+  email?: string | null;
 }
 
 export interface Order {

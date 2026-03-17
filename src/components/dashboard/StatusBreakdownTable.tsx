@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Spinner } from 'react-bootstrap';
 import { supabase } from '../../lib/supabaseClient';
-import { STATUS_COLORS } from '../../lib/constants';
+import { STATUS_COLORS, ROLE_VISIBLE_STATUSES, ROLES } from '../../lib/constants';
+import { useAuth } from '../../context/useAuth';
 
 interface StatusCount {
   status: string;
@@ -9,21 +10,43 @@ interface StatusCount {
 }
 
 export default function StatusBreakdownTable() {
+  const { profile, user } = useAuth();
   const [data, setData] = useState<StatusCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     async function fetch() {
-      const { data: orders } = await supabase
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
+
+      // Get visible statuses for this role
+      const visibleStatuses = ROLE_VISIBLE_STATUSES[profile.role];
+
+      // Build the query based on role
+      let query = supabase
         .from('orders')
-        .select('current_status')
-        .eq('is_archived', false);
+        .select('current_status');
+
+      // Filter by archived status
+      query = query.eq('is_archived', false);
+
+      // For sales role, filter by salesperson_id
+      if (profile.role === ROLES.SALES && user) {
+        query = query.eq('salesperson_id', user.id);
+      }
+
+      const { data: orders } = await query;
 
       if (!orders) { setLoading(false); return; }
 
+      // Filter by visible statuses
+      const filteredOrders = orders.filter(o => visibleStatuses.includes(o.current_status));
+
       const counts: Record<string, number> = {};
-      orders.forEach(o => {
+      filteredOrders.forEach(o => {
         counts[o.current_status] = (counts[o.current_status] || 0) + 1;
       });
 
@@ -32,11 +55,11 @@ export default function StatusBreakdownTable() {
         .sort((a, b) => b.count - a.count);
 
       setData(sorted);
-      setTotal(orders.length);
+      setTotal(filteredOrders.length);
       setLoading(false);
     }
     fetch();
-  }, []);
+  }, [profile, user]);
 
   if (loading) return <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>;
   if (data.length === 0) return (

@@ -12,19 +12,19 @@ const R = ROLES;
 
 export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   [S.DRAFT]: {
-    allowedNext: [S.PENDING_CUSTOMER_CONFIRMATION, S.CANCELLED],
+    allowedNext: [S.PENDING_CUSTOMER_CONFIRMATION],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.PENDING_CUSTOMER_CONFIRMATION]: {
-    allowedNext: [S.CUSTOMER_CONFIRMED, S.ON_HOLD, S.CANCELLED],
+    allowedNext: [S.CUSTOMER_CONFIRMED, S.ON_HOLD],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.CUSTOMER_CONFIRMED]: {
-    allowedNext: [S.PENDING_PAYMENT, S.ON_HOLD, S.CANCELLED],
+    allowedNext: [S.PENDING_PAYMENT, S.ON_HOLD],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.PENDING_PAYMENT]: {
-    allowedNext: [S.ORDER_RELEASED_TO_ENGINEERING, S.ON_HOLD, S.CANCELLED],
+    allowedNext: [S.ORDER_RELEASED_TO_ENGINEERING, S.ON_HOLD],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.ORDER_RELEASED_TO_ENGINEERING]: {

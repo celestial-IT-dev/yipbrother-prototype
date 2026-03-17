@@ -1,8 +1,17 @@
 import { Card } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
+import { ROLES } from '../lib/constants';
 import OrderForm from '../components/orders/OrderForm';
 
 export default function NewOrderPage() {
+  const { profile, loading } = useAuth();
+
+  // Only Sales can create orders
+  if (!loading && profile?.role !== ROLES.SALES) {
+    return <Navigate to="/orders" replace />;
+  }
+
   return (
     <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
       <div className="page-header">

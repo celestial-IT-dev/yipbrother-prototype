@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Spinner } from 'react-bootstrap';
 import { supabase } from '../../lib/supabaseClient';
-import { STATUSES } from '../../lib/constants';
+import { STATUSES, ROLE_VISIBLE_STATUSES, ROLES } from '../../lib/constants';
+import { useAuth } from '../../context/useAuth';
 
 interface Stats {
   total: number;
@@ -22,22 +23,46 @@ const CARD_CONFIG = [
 ] as const;
 
 export default function SummaryCards() {
+  const { profile, user } = useAuth();
   const [stats, setStats] = useState<Stats>({ total: 0, active: 0, onHold: 0, completed: 0, cancelled: 0, overdue: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStats() {
-      const { data } = await supabase
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
+
+      // Get visible statuses for this role
+      const visibleStatuses = ROLE_VISIBLE_STATUSES[profile.role];
+      
+      // Build the query based on role
+      let query = supabase
         .from('orders')
-        .select('current_status, target_completion_date')
-        .eq('is_archived', false);
+        .select('current_status, target_completion_date');
+
+      // Filter by archived status
+      query = query.eq('is_archived', false);
+
+      // For sales role, filter by salesperson_id
+      if (profile.role === ROLES.SALES && user) {
+        query = query.eq('salesperson_id', user.id);
+      }
+
+      const { data } = await query;
 
       if (!data) { setLoading(false); return; }
 
       const today = new Date();
-      const s: Stats = { total: data.length, active: 0, onHold: 0, completed: 0, cancelled: 0, overdue: 0 };
+      const s: Stats = { total: 0, active: 0, onHold: 0, completed: 0, cancelled: 0, overdue: 0 };
 
       data.forEach(o => {
+        // Only count if status is visible to this role
+        if (!visibleStatuses.includes(o.current_status)) return;
+
+        s.total++;
+
         if (o.current_status === STATUSES.ON_HOLD) s.onHold++;
         else if (o.current_status === STATUSES.COMPLETED_CLOSED) s.completed++;
         else if (o.current_status === STATUSES.CANCELLED) s.cancelled++;
@@ -55,7 +80,7 @@ export default function SummaryCards() {
       setLoading(false);
     }
     fetchStats();
-  }, []);
+  }, [profile, user]);
 
   if (loading) {
     return (
