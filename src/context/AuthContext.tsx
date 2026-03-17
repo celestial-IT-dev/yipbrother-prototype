@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session, AuthAction } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import type { Profile } from '../lib/types';
 import { AuthContext } from './authContextValue';
@@ -56,13 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session, error) => {
-      if (error) {
-        console.error('AuthContext: Auth state change error:', error);
-        setLoading(false);
-        return;
-      }
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthAction, session: Session | null) => {
       console.log('AuthContext: Auth state changed:', session ? 'Logged in' : 'Logged out');
       setUser(session?.user ?? null);
       if (session?.user) {
