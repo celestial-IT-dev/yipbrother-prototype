@@ -33,9 +33,9 @@ function buildQuery(statusFilter: string, userRole: string | undefined, userId: 
   if (statusFilter) q = q.eq('current_status', statusFilter);
   
   // For sales users, only show their own orders
-  if (userRole === ROLES.SALES && userId) {
-    q = q.eq('salesperson_id', userId);
-  }
+  // if (userRole === ROLES.SALES && userId) {
+  //   q = q.eq('salesperson_id', userId);
+  // }
   
   return q;
 }
