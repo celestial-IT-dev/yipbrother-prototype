@@ -477,7 +477,7 @@ main.app-main {
   color: var(--primary);
 }
 
-.journey-note {
+.history-note {
   font-size: 0.82rem;
   color: var(--text-secondary);
   background: var(--surface-3);

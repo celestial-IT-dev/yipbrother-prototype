@@ -390,8 +390,8 @@ export default function OrderDetailPage() {
         <Nav variant="tabs" className="detail-tabs mb-3">
           <Nav.Item><Nav.Link eventKey="info">Order Details</Nav.Link></Nav.Item>
           <Nav.Item>
-            <Nav.Link eventKey="journey">
-              Journey
+            <Nav.Link eventKey="history">
+              History
               {history.length > 0 && (
                 <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{history.length}</Badge>
               )}
@@ -468,15 +468,15 @@ export default function OrderDetailPage() {
             </Row>
           </Tab.Pane>
 
-          {/* Journey Tab */}
-          <Tab.Pane eventKey="journey">
+          {/* History Tab */}
+          <Tab.Pane eventKey="history">
             <Row className="g-3">
               <Col lg={5}>
                 <Card className="info-card h-100">
                   <Card.Header className="info-card-header">Current Workflow Position</Card.Header>
                   <Card.Body>
                     <WorkflowDiagram currentStatus={order.current_status} />
-                    <div className="journey-note mt-3">
+                    <div className="history-note mt-3">
                       <strong>7-day movement:</strong> {status7DaysAgo} {'->'} {order.current_status}
                     </div>
                   </Card.Body>
