@@ -19,32 +19,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navbarRef = useRef<HTMLElement>(null);
 
-  // Close mobile navbar after clicking outside the entire navbar component (mobile only)
-  useEffect(() => {
-    const navbarEl = navbarRef.current;
-    if (!navbarEl) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      // Only work on mobile screens (below lg breakpoint = 992px)
-      if (window.innerWidth >= 992) return;
-      
-      // Only close if click is outside the navbar entirely
-      if (!navbarEl.contains(event.target as Node)) {
-        // Check if navbar is currently expanded before trying to collapse
-        const collapseEl = navbarEl.querySelector('.navbar-collapse');
-        if (collapseEl) {
-          const collapseInstance = window.bootstrap.Collapse.getInstance(collapseEl);
-          if (collapseInstance && collapseInstance._isShown) {
-            toggleRef.current?.click();
-          }
-        }
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
   async function handleSignOut() {
     await signOut();
     navigate('/login');

@@ -27,6 +27,40 @@ interface OrderUpdateData {
   actual_completion_date?: string;
 }
 
+const WORKFLOW_SEQUENCE: OrderStatus[] = [
+  STATUSES.DRAFT,
+  STATUSES.PENDING_CUSTOMER_CONFIRMATION,
+  STATUSES.CUSTOMER_CONFIRMED,
+  STATUSES.PENDING_PAYMENT,
+  STATUSES.ORDER_RELEASED_TO_ENGINEERING,
+  STATUSES.DESIGN_IN_PROGRESS,
+  STATUSES.PENDING_DESIGN_APPROVAL,
+  STATUSES.MATERIAL_PLANNING,
+  STATUSES.WAITING_FOR_MATERIALS,
+  STATUSES.MATERIALS_READY,
+  STATUSES.PENDING_TO_START,
+  STATUSES.PRODUCTION_STARTED,
+  STATUSES.FABRICATION_IN_PROGRESS,
+  STATUSES.ASSEMBLY_IN_PROGRESS,
+  STATUSES.PAINTING_IN_PROGRESS,
+  STATUSES.INSTALLATION_IN_PROGRESS,
+  STATUSES.QUALITY_INSPECTION,
+  STATUSES.READY_FOR_DELIVERY,
+  STATUSES.INQUIRE_DELIVERY_METHOD,
+  STATUSES.PENDING_FINAL_PAYMENT,
+  STATUSES.SIGN_OFF,
+  STATUSES.COMPLETED_CLOSED,
+];
+
+function formatDate(value?: string | null) {
+  return value ? new Date(value).toLocaleDateString() : '—';
+}
+
+function dateDiffInDays(from: Date, to: Date) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  return Math.ceil((to.getTime() - from.getTime()) / dayMs);
+}
+
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Col xs={12} sm={6} md={4} className="mb-3">
@@ -65,11 +99,9 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!id) {
-      console.log('OrderDetailPage: No ID provided');
       return;
     }
 
-    console.log('OrderDetailPage: Loading order with ID:', id);
     let active = true;
 
     Promise.all([
@@ -83,35 +115,29 @@ export default function OrderDetailPage() {
       if (!active) return;
       
       if (ordErr) {
-        console.error('Order fetch error:', ordErr);
         throw ordErr;
       }
       
       if (histErr) {
-        console.error('History fetch error:', histErr);
         // Don't throw, just log - history can be empty
       }
       
-      console.log('Order fetched:', ord ? 'Found' : 'Not found');
       setOrder(ord as Order | null);
       setHistory((hist as OrderHistoryEntry[]) || []);
     })
     .catch((err) => {
       if (!active) return;
-      console.error('Error loading order:', err);
       setError(`Failed to load order details: ${err.message}`);
       setOrder(null);
     })
     .finally(() => {
       if (active) {
-        console.log('OrderDetailPage: Loading complete');
         setLoading(false);
       }
     });
 
     return () => { 
       active = false; 
-      console.log('OrderDetailPage: Cleanup - component unmounted');
     };
   }, [id]);
 
@@ -173,53 +199,145 @@ export default function OrderDetailPage() {
     ? canUserUpdateStatus(order.current_status, profile.role) && allowedNext.length > 0
     : false;
   const isTerminal = TERMINAL_STATUSES.includes(order.current_status);
-  const isOverdue = order.target_completion_date && !isTerminal && new Date(order.target_completion_date) < new Date();
+  const isLockedForEdit = LOCKED_FROM_EDIT_STATUSES.includes(order.current_status as any);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const createdDate = order.created_at ? new Date(order.created_at) : null;
+  const targetDate = order.target_completion_date ? new Date(order.target_completion_date) : null;
+  const workflowIndex = WORKFLOW_SEQUENCE.indexOf(order.current_status);
+
+  if (createdDate) createdDate.setHours(0, 0, 0, 0);
+  if (targetDate) targetDate.setHours(0, 0, 0, 0);
+
+  const isOverdue = !!targetDate && !isTerminal && targetDate < today;
+  const daysOpen = createdDate ? Math.max(0, dateDiffInDays(createdDate, today)) : null;
+  const daysToTarget = targetDate ? dateDiffInDays(today, targetDate) : null;
+  const progressPct = workflowIndex >= 0
+    ? Math.round(((workflowIndex + 1) / WORKFLOW_SEQUENCE.length) * 100)
+    : 0;
+  const timelineEvents = history.length;
+  const latestHistory = history[history.length - 1];
+
+  const slaText = isOverdue
+    ? 'At Risk'
+    : daysToTarget === null
+      ? 'No Target Date'
+      : daysToTarget <= 3
+        ? 'Due Soon'
+        : 'On Track';
+
+  const nextActionText = canUpdate && allowedNext.length > 0
+    ? `Suggested next status: ${allowedNext[0]}`
+    : isTerminal
+      ? 'Order is in terminal status.'
+      : 'No status update permission for current role.';
 
   return (
     <div className="order-detail-page">
-      {/* Header */}
-      <div className="order-detail-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-        <div>
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-1">
-              <li className="breadcrumb-item"><Link to="/orders" className="text-decoration-none">Orders</Link></li>
-              <li className="breadcrumb-item active fw-semibold">{order.order_number}</li>
-            </ol>
-          </nav>
-          <h3 className="fw-bold mb-2">{order.order_number}</h3>
-          <div className="d-flex flex-wrap align-items-center gap-2">
-            <StatusBadge status={order.current_status} />
-            {isOverdue && <Badge bg="danger" className="pill-badge">⏰ Overdue</Badge>}
+      <Card className="order-hero-card mb-3">
+        <Card.Body className="p-3 p-md-4">
+          <div className="order-detail-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+              <nav aria-label="breadcrumb">
+                <ol className="breadcrumb mb-1">
+                  <li className="breadcrumb-item"><Link to="/orders" className="text-decoration-none">Orders</Link></li>
+                  <li className="breadcrumb-item active fw-semibold">{order.order_number}</li>
+                </ol>
+              </nav>
+              <h3 className="fw-bold mb-2">{order.order_number}</h3>
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                <StatusBadge status={order.current_status} />
+                <Badge bg={isOverdue ? 'danger' : 'success'} className="pill-badge">{slaText}</Badge>
+                {isOverdue && <Badge bg="danger" className="pill-badge">Overdue</Badge>}
+              </div>
+              <div className="mt-2">
+                <small className="text-muted">Customer: <strong>{order.customer_name}</strong></small>
+                {order.profiles?.full_name && (
+                  <small className="text-muted ms-3">Sales: <strong>{order.profiles.full_name}</strong></small>
+                )}
+              </div>
+            </div>
+            <div className="d-flex gap-2 flex-wrap align-items-start">
+              {!isTerminal && !isLockedForEdit && (
+                <Link to={`/orders/${id}/edit`}>
+                  <Button variant="outline-secondary" size="sm" className="btn-modern">Edit</Button>
+                </Link>
+              )}
+              {canUpdate && (
+                <Button variant="primary" onClick={() => setShowModal(true)} className="btn-modern">
+                  Update Status
+                </Button>
+              )}
+              {!canUpdate && !isTerminal && (
+                <Button variant="outline-secondary" size="sm" disabled title="Your role cannot update this status" className="btn-modern">
+                  Status Update Locked
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="mt-2">
-            <small className="text-muted">Customer: <strong>{order.customer_name}</strong></small>
-            {order.profiles?.full_name && (
-              <small className="text-muted ms-3">Sales: <strong>{order.profiles.full_name}</strong></small>
-            )}
-          </div>
-        </div>
-        <div className="d-flex gap-2 flex-wrap align-items-start">
-          {!isTerminal && !LOCKED_FROM_EDIT_STATUSES.includes(order.current_status as any) && (
-            <Link to={`/orders/${id}/edit`}>
-              <Button variant="outline-secondary" size="sm" className="btn-modern">✏️ Edit</Button>
-            </Link>
-          )}
-          {canUpdate && (
-            <Button variant="primary" onClick={() => setShowModal(true)} className="btn-modern">
-              🔄 Update Status
-            </Button>
-          )}
-          {!canUpdate && !isTerminal && (
-            <Button variant="outline-secondary" size="sm" disabled title="Your role cannot update this status" className="btn-modern">
-              🔒 Status Update
-            </Button>
-          )}
-        </div>
-      </div>
+
+          <Row className="g-2 g-md-3 mt-2">
+            <Col xs={6} md={3}>
+              <div className="order-mini-metric">
+                <div className="metric-label">Days Open</div>
+                <div className="metric-value">{daysOpen ?? '—'}</div>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="order-mini-metric">
+                <div className="metric-label">Days To Target</div>
+                <div className={`metric-value ${isOverdue ? 'text-danger' : ''}`}>{daysToTarget ?? '—'}</div>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="order-mini-metric">
+                <div className="metric-label">Workflow Progress</div>
+                <div className="metric-value">{progressPct}%</div>
+              </div>
+            </Col>
+            <Col xs={6} md={3}>
+              <div className="order-mini-metric">
+                <div className="metric-label">Timeline Events</div>
+                <div className="metric-value">{timelineEvents}</div>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      <Card className="info-card mb-3">
+        <Card.Header className="info-card-header">Admin Brief</Card.Header>
+        <Card.Body>
+          <Row className="g-3">
+            <Col md={7}>
+              <div className="insight-panel">
+                <div className="insight-title">Immediate Focus</div>
+                <div className="insight-text">{nextActionText}</div>
+                <div className="insight-meta mt-2">
+                  Last update: {latestHistory ? `${latestHistory.new_status} on ${formatDate(latestHistory.created_at)}` : 'No status history yet'}
+                </div>
+              </div>
+            </Col>
+            <Col md={5}>
+              <div className="insight-panel h-100">
+                <div className="insight-title">Schedule Health</div>
+                <div className="insight-text">
+                  {isOverdue
+                    ? 'This order is overdue. Prioritize status movement and owner follow-up today.'
+                    : daysToTarget !== null && daysToTarget <= 3
+                      ? 'Due date is near. Confirm next stage readiness and dependencies.'
+                      : 'Timeline appears stable for now. Keep milestone checks on cadence.'}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {successMsg && (
         <Alert variant="success" dismissible onClose={() => setSuccessMsg('')} className="alert-modern">
-          ✅ {successMsg}
+          {successMsg}
         </Alert>
       )}
       {error && (
@@ -231,18 +349,18 @@ export default function OrderDetailPage() {
       {/* Tabs */}
       <Tab.Container defaultActiveKey="info">
         <Nav variant="tabs" className="detail-tabs mb-3">
-          <Nav.Item><Nav.Link eventKey="info">📋 Order Details</Nav.Link></Nav.Item>
+          <Nav.Item><Nav.Link eventKey="info">Order Details</Nav.Link></Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="timeline">
-              📅 History
+              History
               {history.length > 0 && (
                 <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{history.length}</Badge>
               )}
             </Nav.Link>
           </Nav.Item>
-          <Nav.Item><Nav.Link eventKey="attachments">📎 Attachments</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="milestones">🏁 Milestones</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="workflow">📊 Workflow</Nav.Link></Nav.Item>
+          <Nav.Item><Nav.Link eventKey="attachments">Attachments</Nav.Link></Nav.Item>
+          <Nav.Item><Nav.Link eventKey="milestones">Milestones</Nav.Link></Nav.Item>
+          <Nav.Item><Nav.Link eventKey="workflow">Workflow</Nav.Link></Nav.Item>
         </Nav>
         <Tab.Content>
           {/* Order Info Tab */}
@@ -250,7 +368,7 @@ export default function OrderDetailPage() {
             <Row className="g-3">
               <Col md={6}>
                 <Card className="info-card h-100">
-                  <Card.Header className="info-card-header">👤 Customer Information</Card.Header>
+                  <Card.Header className="info-card-header">Customer Information</Card.Header>
                   <Card.Body>
                     <Row>
                       <InfoRow label="Customer Name" value={order.customer_name} />
@@ -264,7 +382,7 @@ export default function OrderDetailPage() {
               </Col>
               <Col md={6}>
                 <Card className="info-card h-100">
-                  <Card.Header className="info-card-header">🚛 Vehicle / Chassis</Card.Header>
+                  <Card.Header className="info-card-header">Vehicle / Chassis</Card.Header>
                   <Card.Body>
                     <Row>
                       <InfoRow label="Vehicle Reg." value={order.vehicle_reg} />
@@ -277,7 +395,7 @@ export default function OrderDetailPage() {
               </Col>
               <Col md={6}>
                 <Card className="info-card h-100">
-                  <Card.Header className="info-card-header">🔧 Manufacturing</Card.Header>
+                  <Card.Header className="info-card-header">Manufacturing</Card.Header>
                   <Card.Body>
                     <Row>
                       <InfoRow label="Body Type" value={order.body_type} />
@@ -290,16 +408,14 @@ export default function OrderDetailPage() {
               </Col>
               <Col md={6}>
                 <Card className="info-card h-100">
-                  <Card.Header className="info-card-header">📋 Order Details</Card.Header>
+                  <Card.Header className="info-card-header">Order Details</Card.Header>
                   <Card.Body>
                     <Row>
                       <InfoRow label="Order Number" value={order.order_number} />
                       <InfoRow label="Salesperson" value={order.profiles?.full_name} />
                       <InfoRow
                         label="Target Completion"
-                        value={order.target_completion_date
-                          ? new Date(order.target_completion_date).toLocaleDateString()
-                          : null}
+                        value={formatDate(order.target_completion_date)}
                       />
                       {/* <InfoRow label="Initial Payment" value={order.initial_payment_status} />
                       <InfoRow label="Final Payment" value={order.final_payment_status} /> 
@@ -326,7 +442,7 @@ export default function OrderDetailPage() {
           {/* Attachments Tab */}
           <Tab.Pane eventKey="attachments">
             <Card className="info-card">
-              <Card.Header className="info-card-header">📎 Attachments</Card.Header>
+              <Card.Header className="info-card-header">Attachments</Card.Header>
               <Card.Body className="p-4">
                 <AttachmentsPanel orderId={id!} refreshTrigger={attachmentRefresh} />
               </Card.Body>
@@ -336,10 +452,10 @@ export default function OrderDetailPage() {
           {/* Milestones Tab */}
           <Tab.Pane eventKey="milestones">
             <Card className="info-card">
-              <Card.Header className="info-card-header">🏁 Milestone Dates</Card.Header>
+              <Card.Header className="info-card-header">Milestone Dates</Card.Header>
               <Card.Body>
                 <Row>
-                  <InfoRow label="Order Created" value={order.created_at ? new Date(order.created_at).toLocaleDateString() : null} />
+                  <InfoRow label="Order Created" value={formatDate(order.created_at)} />
                   <InfoRow label="Customer Confirmed" value={order.customer_confirmation_date} />
                   <InfoRow label="Engineering Released" value={order.engineering_release_date} />
                   <InfoRow label="Materials Ready" value={order.materials_ready_date} />
@@ -357,7 +473,7 @@ export default function OrderDetailPage() {
           {/* Workflow Tab */}
           <Tab.Pane eventKey="workflow">
             <Card className="info-card">
-              <Card.Header className="info-card-header">📊 Order Workflow — Current Position</Card.Header>
+              <Card.Header className="info-card-header">Order Workflow — Current Position</Card.Header>
               <Card.Body>
                 <WorkflowDiagram currentStatus={order.current_status} />
               </Card.Body>

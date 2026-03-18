@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, InputGroup, Button, Badge, Spinner, Card } from 'react-bootstrap';
+import { Form, Button, Badge, Spinner, Card, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/useAuth';
@@ -41,8 +41,14 @@ export default function OrderList() {
   const { profile, user } = useAuth();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [orderNumberFilter, setOrderNumberFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [salespersonFilter, setSalespersonFilter] = useState('');
+  const [bodyTypeFilter, setBodyTypeFilter] = useState('');
+  const [targetFrom, setTargetFrom] = useState('');
+  const [targetTo, setTargetTo] = useState('');
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   // Initial load and re-load when statusFilter changes
   useEffect(() => {
@@ -57,27 +63,52 @@ export default function OrderList() {
     return () => { active = false; };
   }, [statusFilter, profile?.role, user?.id]);
 
-  // Called directly from event handlers (not from an effect)
-  async function applyFilter(nextFilter: string) {
-    setLoading(true);
-    const { data, error } = await buildQuery(nextFilter, profile?.role, user?.id);
-    if (!error && data) setOrders(data as unknown as OrderListItem[]);
-    setLoading(false);
-  }
-
   const filtered = orders.filter(o => {
     // Check role-based visibility
     if (profile && !canUserSeeOrder(o.current_status, profile.role)) {
       return false;
     }
 
-    // Check search filters
-    const salespersonName = o.profiles?.full_name || '';
-    return (
-      o.order_number.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-      salespersonName.toLowerCase().includes(search.toLowerCase())
-    );
+    const orderNumber = o.order_number.toLowerCase();
+    const customerName = o.customer_name.toLowerCase();
+    const salespersonName = (o.profiles?.full_name || '').toLowerCase();
+    const bodyType = (o.body_type || '').toLowerCase();
+
+    if (orderNumberFilter && !orderNumber.includes(orderNumberFilter.toLowerCase())) {
+      return false;
+    }
+    if (customerFilter && !customerName.includes(customerFilter.toLowerCase())) {
+      return false;
+    }
+    if (salespersonFilter && !salespersonName.includes(salespersonFilter.toLowerCase())) {
+      return false;
+    }
+    if (bodyTypeFilter && !bodyType.includes(bodyTypeFilter.toLowerCase())) {
+      return false;
+    }
+    if (overdueOnly && !isOverdue(o)) {
+      return false;
+    }
+
+    if (targetFrom || targetTo) {
+      if (!o.target_completion_date) return false;
+      const targetDate = new Date(o.target_completion_date);
+      targetDate.setHours(0, 0, 0, 0);
+
+      if (targetFrom) {
+        const from = new Date(targetFrom);
+        from.setHours(0, 0, 0, 0);
+        if (targetDate < from) return false;
+      }
+
+      if (targetTo) {
+        const to = new Date(targetTo);
+        to.setHours(0, 0, 0, 0);
+        if (targetDate > to) return false;
+      }
+    }
+
+    return true;
   });
 
   const isOverdue = (order: OrderListItem) => {
@@ -86,44 +117,127 @@ export default function OrderList() {
     return new Date(order.target_completion_date) < new Date();
   };
 
+  const activeFilterCount = [
+    statusFilter,
+    orderNumberFilter,
+    customerFilter,
+    salespersonFilter,
+    bodyTypeFilter,
+    targetFrom,
+    targetTo,
+    overdueOnly ? 'overdue' : '',
+  ].filter(Boolean).length;
+
+  function resetFilters() {
+    setStatusFilter('');
+    setOrderNumberFilter('');
+    setCustomerFilter('');
+    setSalespersonFilter('');
+    setBodyTypeFilter('');
+    setTargetFrom('');
+    setTargetTo('');
+    setOverdueOnly(false);
+  }
+
   return (
     <div>
-      {/* Filters */}
-      <div className="d-flex flex-wrap gap-2 mb-3">
-        <InputGroup style={{ maxWidth: 300 }} className="search-bar">
-          <InputGroup.Text>🔍</InputGroup.Text>
-          <Form.Control
-            placeholder="Search order, customer..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </InputGroup>
-        <Form.Select
-          style={{ maxWidth: 240, fontSize: '0.875rem' }}
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {Object.values(STATUSES).map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </Form.Select>
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          className="btn-modern"
-          onClick={() => {
-            setSearch('');
-            setStatusFilter('');
-            void applyFilter('');
-          }}
-        >
-          Reset
-        </Button>
-        <div className="ms-auto">
-          <small className="text-muted">{filtered.length} order{filtered.length !== 1 ? 's' : ''}</small>
-        </div>
-      </div>
+      <Card className="info-card mb-3 advanced-filter-card">
+        <Card.Body>
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+              <div className="advanced-filter-title">Advanced Filters</div>
+              <div className="advanced-filter-subtitle">Search by specific columns and delivery timeline</div>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <Badge bg="secondary" className="pill-badge">{activeFilterCount} active</Badge>
+              <Button variant="outline-secondary" size="sm" className="btn-modern" onClick={resetFilters}>
+                Clear All
+              </Button>
+            </div>
+          </div>
+
+          <Row className="g-2 g-md-3">
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Order Number</Form.Label>
+                <Form.Control
+                  placeholder="e.g. YB-202603-001"
+                  value={orderNumberFilter}
+                  onChange={e => setOrderNumberFilter(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Customer</Form.Label>
+                <Form.Control
+                  placeholder="Customer name"
+                  value={customerFilter}
+                  onChange={e => setCustomerFilter(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Salesperson</Form.Label>
+                <Form.Control
+                  placeholder="Salesperson name"
+                  value={salespersonFilter}
+                  onChange={e => setSalespersonFilter(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Status</Form.Label>
+                <Form.Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                  <option value="">All Statuses</option>
+                  {Object.values(STATUSES).map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Body Type</Form.Label>
+                <Form.Control
+                  placeholder="e.g. Flatbed"
+                  value={bodyTypeFilter}
+                  onChange={e => setBodyTypeFilter(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Target Date From</Form.Label>
+                <Form.Control type="date" value={targetFrom} onChange={e => setTargetFrom(e.target.value)} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3}>
+              <Form.Group>
+                <Form.Label>Target Date To</Form.Label>
+                <Form.Control type="date" value={targetTo} onChange={e => setTargetTo(e.target.value)} />
+              </Form.Group>
+            </Col>
+            <Col xs={12} md={6} lg={3} className="d-flex align-items-end">
+              <Form.Check
+                type="switch"
+                id="overdue-only"
+                label="Show overdue only"
+                checked={overdueOnly}
+                onChange={e => setOverdueOnly(e.target.checked)}
+                className="mb-2"
+              />
+            </Col>
+          </Row>
+
+          <div className="mt-2 text-muted" style={{ fontSize: '0.8125rem' }}>
+            Showing {filtered.length} order{filtered.length !== 1 ? 's' : ''}
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Table */}
       <Card className="info-card overflow-hidden">
