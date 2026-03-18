@@ -40,7 +40,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Navbar ref={navbarRef} className="oms-navbar" expand="lg" sticky="top">
         <Container fluid="xl">
           <Navbar.Brand as={Link} to="/">
-            <img src="logo.png" alt="Yip Brother Logo" className="brand-icon" />
+            <img src="/logo.png" alt="Yip Brother Logo" className="brand-icon" />
             <span>Yip Brother <span style={{ fontWeight: 400, opacity: 0.6 }}>OMS</span></span>
           </Navbar.Brand>
 

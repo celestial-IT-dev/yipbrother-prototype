@@ -10,10 +10,10 @@ const base = process.env.BASE_PATH?.trim() || '/'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base,
   define: {
     // Expose the base path to the router as a build-time constant.
     // In local dev this will always be '/' regardless of any env variable.
     __BASE_PATH__: JSON.stringify(base),
   },
+  base: '/yipbrother-prototype/',
 })

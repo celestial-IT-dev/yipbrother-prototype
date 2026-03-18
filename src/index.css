@@ -886,6 +886,7 @@ main.app-main {
 .login-logo {
   width: 56px;
   height: 56px;
+  object-fit: contain;
   background: var(--primary);
   border-radius: var(--radius-lg);
   display: flex;

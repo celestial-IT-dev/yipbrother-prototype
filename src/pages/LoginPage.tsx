@@ -25,7 +25,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="text-center mb-4">
-          <img src="logo.png" alt="Yip Brother Logo" className="brand-icon" />
+          <img src="logo.png" alt="Yip Brother Logo" className="login-logo" />
           <h4 className="fw-bold mb-1">Yip Brother OMS</h4>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
             Operation Management System
