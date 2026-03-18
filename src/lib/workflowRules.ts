@@ -29,7 +29,7 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   },
   [S.ORDER_RELEASED_TO_ENGINEERING]: {
     allowedNext: [S.DESIGN_IN_PROGRESS, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER],
+    allowedRoles: [R.DESIGNER],
   },
   [S.DESIGN_IN_PROGRESS]: {
     allowedNext: [S.PENDING_DESIGN_APPROVAL, S.ON_HOLD],
