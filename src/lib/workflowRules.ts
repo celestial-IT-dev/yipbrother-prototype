@@ -29,19 +29,19 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   },
   [S.ORDER_RELEASED_TO_ENGINEERING]: {
     allowedNext: [S.DESIGN_IN_PROGRESS, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER, R.DESIGNER],
+    allowedRoles: [R.ENGINEER],
   },
   [S.DESIGN_IN_PROGRESS]: {
     allowedNext: [S.PENDING_DESIGN_APPROVAL, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER, R.DESIGNER],
+    allowedRoles: [R.DESIGNER],
   },
   [S.PENDING_DESIGN_APPROVAL]: {
     allowedNext: [S.MATERIAL_PLANNING, S.REJECTED_REVISION_REQUESTED, S.ON_HOLD],
-    allowedRoles: [R.ENGINEER],
+    allowedRoles: [R.DESIGNER],
   },
   [S.REJECTED_REVISION_REQUESTED]: {
     allowedNext: [S.DESIGN_IN_PROGRESS],
-    allowedRoles: [R.ENGINEER, R.DESIGNER],
+    allowedRoles: [R.DESIGNER],
   },
   [S.MATERIAL_PLANNING]: {
     allowedNext: [S.WAITING_FOR_MATERIALS, S.ON_HOLD],
@@ -85,7 +85,7 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
   },
   [S.REWORK_REQUIRED]: {
     allowedNext: [S.PRODUCTION_STARTED, S.ON_HOLD],
-    allowedRoles: [R.QA_QC, R.PRODUCTION_ENGINEER],
+    allowedRoles: [R.QA_QC],
   },
   [S.READY_FOR_DELIVERY]: {
     allowedNext: [S.INQUIRE_DELIVERY_METHOD],
