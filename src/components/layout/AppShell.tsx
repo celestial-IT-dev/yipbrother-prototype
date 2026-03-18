@@ -55,6 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   as={Link}
                   to={to}
                   active={match(location.pathname)}
+                  onClick={closeMobileNavbar}
                 >
                   {label}
                 </Nav.Link>
