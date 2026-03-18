@@ -88,7 +88,7 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
     allowedRoles: [R.QA_QC],
   },
   [S.READY_FOR_DELIVERY]: {
-    allowedNext: [S.INQUIRE_DELIVERY_METHOD],
+    allowedNext: [S.INQUIRE_DELIVERY_METHOD, S.ON_HOLD],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.INQUIRE_DELIVERY_METHOD]: {
@@ -100,7 +100,7 @@ export const WORKFLOW_RULES: Record<string, TransitionRule> = {
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.SIGN_OFF]: {
-    allowedNext: [S.COMPLETED_CLOSED],
+    allowedNext: [S.COMPLETED_CLOSED, S.ON_HOLD],
     allowedRoles: [R.SALES, R.ADMIN],
   },
   [S.ON_HOLD]: {
