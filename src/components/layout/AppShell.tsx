@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import 'bootstrap/dist/js/bootstrap.bundle';
 import { useAuth } from '../../context/useAuth';
 import { ROLE_LABELS } from '../../lib/constants';
-import logo from './logo.png';
+import logo from '../../assets/logo.png';
 
 declare global {
   interface Window {
