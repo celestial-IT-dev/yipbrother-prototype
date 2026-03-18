@@ -61,6 +61,27 @@ function dateDiffInDays(from: Date, to: Date) {
   return Math.ceil((to.getTime() - from.getTime()) / dayMs);
 }
 
+function getStatusAtDate(history: OrderHistoryEntry[], currentStatus: OrderStatus, cutoff: Date): OrderStatus {
+  let statusAtCutoff = currentStatus;
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const entry = history[i];
+    if (new Date(entry.created_at) > cutoff) {
+      if (entry.previous_status) {
+        statusAtCutoff = entry.previous_status as OrderStatus;
+      }
+      continue;
+    }
+    break;
+  }
+  return statusAtCutoff;
+}
+
+function trendArrow(delta: number) {
+  if (delta > 0) return 'UP';
+  if (delta < 0) return 'DOWN';
+  return 'FLAT';
+}
+
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Col xs={12} sm={6} md={4} className="mb-3">
@@ -219,6 +240,18 @@ export default function OrderDetailPage() {
   const timelineEvents = history.length;
   const latestHistory = history[history.length - 1];
 
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const recentEvents = history.filter(item => new Date(item.created_at) >= weekAgo).length;
+  const status7DaysAgo = getStatusAtDate(history, order.current_status, weekAgo);
+  const workflowIndex7DaysAgo = WORKFLOW_SEQUENCE.indexOf(status7DaysAgo);
+  const progressPct7DaysAgo = workflowIndex7DaysAgo >= 0
+    ? Math.round(((workflowIndex7DaysAgo + 1) / WORKFLOW_SEQUENCE.length) * 100)
+    : 0;
+  const progressDelta7d = progressPct - progressPct7DaysAgo;
+  const daysOpenDelta7d = daysOpen !== null ? Math.min(daysOpen, 7) : 0;
+  const daysToTargetDelta7d = daysToTarget !== null ? -7 : 0;
+
   const slaText = isOverdue
     ? 'At Risk'
     : daysToTarget === null
@@ -282,24 +315,30 @@ export default function OrderDetailPage() {
               <div className="order-mini-metric">
                 <div className="metric-label">Days Open</div>
                 <div className="metric-value">{daysOpen ?? '—'}</div>
+                <div className="metric-trend">{trendArrow(daysOpenDelta7d)} {Math.abs(daysOpenDelta7d)}d vs 7d</div>
               </div>
             </Col>
             <Col xs={6} md={3}>
               <div className="order-mini-metric">
                 <div className="metric-label">Days To Target</div>
                 <div className={`metric-value ${isOverdue ? 'text-danger' : ''}`}>{daysToTarget ?? '—'}</div>
+                <div className="metric-trend">{trendArrow(daysToTargetDelta7d)} {Math.abs(daysToTargetDelta7d)}d vs 7d</div>
               </div>
             </Col>
             <Col xs={6} md={3}>
               <div className="order-mini-metric">
                 <div className="metric-label">Workflow Progress</div>
                 <div className="metric-value">{progressPct}%</div>
+                <div className={`metric-trend ${progressDelta7d > 0 ? 'text-success' : progressDelta7d < 0 ? 'text-danger' : ''}`}>
+                  {trendArrow(progressDelta7d)} {Math.abs(progressDelta7d)}% vs 7d
+                </div>
               </div>
             </Col>
             <Col xs={6} md={3}>
               <div className="order-mini-metric">
                 <div className="metric-label">Timeline Events</div>
                 <div className="metric-value">{timelineEvents}</div>
+                <div className="metric-trend">UP {recentEvents} this week</div>
               </div>
             </Col>
           </Row>
@@ -351,8 +390,8 @@ export default function OrderDetailPage() {
         <Nav variant="tabs" className="detail-tabs mb-3">
           <Nav.Item><Nav.Link eventKey="info">Order Details</Nav.Link></Nav.Item>
           <Nav.Item>
-            <Nav.Link eventKey="timeline">
-              History
+            <Nav.Link eventKey="journey">
+              Journey
               {history.length > 0 && (
                 <Badge bg="secondary" className="ms-2" style={{ fontSize: '0.7rem' }}>{history.length}</Badge>
               )}
@@ -360,7 +399,6 @@ export default function OrderDetailPage() {
           </Nav.Item>
           <Nav.Item><Nav.Link eventKey="attachments">Attachments</Nav.Link></Nav.Item>
           <Nav.Item><Nav.Link eventKey="milestones">Milestones</Nav.Link></Nav.Item>
-          <Nav.Item><Nav.Link eventKey="workflow">Workflow</Nav.Link></Nav.Item>
         </Nav>
         <Tab.Content>
           {/* Order Info Tab */}
@@ -430,13 +468,29 @@ export default function OrderDetailPage() {
             </Row>
           </Tab.Pane>
 
-          {/* Timeline Tab */}
-          <Tab.Pane eventKey="timeline">
-            <Card className="info-card">
-              <Card.Body className="p-4">
-                <StatusTimeline history={history} />
-              </Card.Body>
-            </Card>
+          {/* Journey Tab */}
+          <Tab.Pane eventKey="journey">
+            <Row className="g-3">
+              <Col lg={5}>
+                <Card className="info-card h-100">
+                  <Card.Header className="info-card-header">Current Workflow Position</Card.Header>
+                  <Card.Body>
+                    <WorkflowDiagram currentStatus={order.current_status} />
+                    <div className="journey-note mt-3">
+                      <strong>7-day movement:</strong> {status7DaysAgo} {'->'} {order.current_status}
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col lg={7}>
+                <Card className="info-card h-100">
+                  <Card.Header className="info-card-header">Status History Timeline</Card.Header>
+                  <Card.Body className="p-4">
+                    <StatusTimeline history={history} />
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
           </Tab.Pane>
 
           {/* Attachments Tab */}
@@ -470,15 +524,6 @@ export default function OrderDetailPage() {
             </Card>
           </Tab.Pane>
 
-          {/* Workflow Tab */}
-          <Tab.Pane eventKey="workflow">
-            <Card className="info-card">
-              <Card.Header className="info-card-header">Order Workflow — Current Position</Card.Header>
-              <Card.Body>
-                <WorkflowDiagram currentStatus={order.current_status} />
-              </Card.Body>
-            </Card>
-          </Tab.Pane>
         </Tab.Content>
       </Tab.Container>
 

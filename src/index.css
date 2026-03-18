@@ -403,6 +403,13 @@ main.app-main {
   color: var(--text);
 }
 
+.metric-trend {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .insight-panel {
   background: var(--surface-3);
   border: 1px solid var(--border);
@@ -444,6 +451,39 @@ main.app-main {
 .advanced-filter-subtitle {
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+.filter-preset-btn {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+}
+
+.sort-header-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.sort-header-btn:hover {
+  color: var(--primary);
+}
+
+.journey-note {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
 }
 
 .orders-table {

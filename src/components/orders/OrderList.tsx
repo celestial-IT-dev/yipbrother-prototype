@@ -20,6 +20,9 @@ interface OrderListItem {
   profiles?: { full_name: string; email?: string } | null;
 }
 
+type SortField = 'created_at' | 'order_number' | 'customer_name' | 'body_type' | 'salesperson' | 'current_status' | 'target_completion_date';
+type SortDirection = 'asc' | 'desc';
+
 function buildQuery(statusFilter: string, userRole: string | undefined, userId: string | undefined) {
   let q = supabase
     .from('orders')
@@ -49,6 +52,8 @@ export default function OrderList() {
   const [targetFrom, setTargetFrom] = useState('');
   const [targetTo, setTargetTo] = useState('');
   const [overdueOnly, setOverdueOnly] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Initial load and re-load when statusFilter changes
   useEffect(() => {
@@ -62,6 +67,12 @@ export default function OrderList() {
 
     return () => { active = false; };
   }, [statusFilter, profile?.role, user?.id]);
+
+  const isOverdue = (order: OrderListItem) => {
+    if (!order.target_completion_date) return false;
+    if (([STATUSES.COMPLETED_CLOSED, STATUSES.CANCELLED] as string[]).includes(order.current_status)) return false;
+    return new Date(order.target_completion_date) < new Date();
+  };
 
   const filtered = orders.filter(o => {
     // Check role-based visibility
@@ -111,11 +122,38 @@ export default function OrderList() {
     return true;
   });
 
-  const isOverdue = (order: OrderListItem) => {
-    if (!order.target_completion_date) return false;
-    if (([STATUSES.COMPLETED_CLOSED, STATUSES.CANCELLED] as string[]).includes(order.current_status)) return false;
-    return new Date(order.target_completion_date) < new Date();
-  };
+  const sorted = [...filtered].sort((a, b) => {
+    const mult = sortDirection === 'asc' ? 1 : -1;
+
+    const getValue = (order: OrderListItem) => {
+      switch (sortField) {
+        case 'order_number':
+          return order.order_number || '';
+        case 'customer_name':
+          return order.customer_name || '';
+        case 'body_type':
+          return order.body_type || '';
+        case 'salesperson':
+          return order.profiles?.full_name || '';
+        case 'current_status':
+          return order.current_status || '';
+        case 'target_completion_date':
+          return order.target_completion_date ? new Date(order.target_completion_date).getTime() : Number.MAX_SAFE_INTEGER;
+        case 'created_at':
+        default:
+          return order.created_at ? new Date(order.created_at).getTime() : 0;
+      }
+    };
+
+    const av = getValue(a);
+    const bv = getValue(b);
+
+    if (typeof av === 'number' && typeof bv === 'number') {
+      return (av - bv) * mult;
+    }
+
+    return String(av).localeCompare(String(bv)) * mult;
+  });
 
   const activeFilterCount = [
     statusFilter,
@@ -139,6 +177,47 @@ export default function OrderList() {
     setOverdueOnly(false);
   }
 
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortField(field);
+    setSortDirection(field === 'created_at' ? 'desc' : 'asc');
+  }
+
+  function applyPreset(preset: 'due_this_week' | 'overdue_production' | 'recent_new') {
+    resetFilters();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (preset === 'due_this_week') {
+      const in7Days = new Date(today);
+      in7Days.setDate(in7Days.getDate() + 7);
+      setTargetFrom(today.toISOString().split('T')[0]);
+      setTargetTo(in7Days.toISOString().split('T')[0]);
+      setSortField('target_completion_date');
+      setSortDirection('asc');
+      return;
+    }
+
+    if (preset === 'overdue_production') {
+      setOverdueOnly(true);
+      setStatusFilter(STATUSES.PRODUCTION_STARTED);
+      setSortField('target_completion_date');
+      setSortDirection('asc');
+      return;
+    }
+
+    setSortField('created_at');
+    setSortDirection('desc');
+  }
+
+  const sortArrow = (field: SortField) => {
+    if (sortField !== field) return ' ↕';
+    return sortDirection === 'asc' ? ' ↑' : ' ↓';
+  };
+
   return (
     <div>
       <Card className="info-card mb-3 advanced-filter-card">
@@ -154,6 +233,18 @@ export default function OrderList() {
                 Clear All
               </Button>
             </div>
+          </div>
+
+          <div className="d-flex flex-wrap gap-2 mb-3">
+            <Button size="sm" variant="outline-primary" className="filter-preset-btn" onClick={() => applyPreset('due_this_week')}>
+              Due This Week
+            </Button>
+            <Button size="sm" variant="outline-primary" className="filter-preset-btn" onClick={() => applyPreset('overdue_production')}>
+              Overdue + Production
+            </Button>
+            <Button size="sm" variant="outline-primary" className="filter-preset-btn" onClick={() => applyPreset('recent_new')}>
+              Recently Created
+            </Button>
           </div>
 
           <Row className="g-2 g-md-3">
@@ -234,7 +325,7 @@ export default function OrderList() {
           </Row>
 
           <div className="mt-2 text-muted" style={{ fontSize: '0.8125rem' }}>
-            Showing {filtered.length} order{filtered.length !== 1 ? 's' : ''}
+            Showing {sorted.length} order{sorted.length !== 1 ? 's' : ''}
           </div>
         </Card.Body>
       </Card>
@@ -243,7 +334,7 @@ export default function OrderList() {
       <Card className="info-card overflow-hidden">
         {loading ? (
           <div className="spinner-center"><Spinner animation="border" variant="primary" /></div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="text-center py-5" style={{ color: 'var(--text-muted)' }}>
             <div style={{ fontSize: '2.5rem' }}>📭</div>
             <p className="mt-2 mb-0">No orders found</p>
@@ -252,7 +343,7 @@ export default function OrderList() {
           <>
             <div className="d-md-none p-3">
               <div className="d-flex flex-column gap-3">
-                {filtered.map(order => (
+                {sorted.map(order => (
                   <Card key={order.id} className={`shadow-sm border-0 ${isOverdue(order) ? 'border-start border-4 border-danger' : ''}`}>
                     <Card.Body className="p-3">
                       <div className="d-flex justify-content-between align-items-start gap-2">
@@ -304,17 +395,17 @@ export default function OrderList() {
               <table className="table orders-table mb-0">
                 <thead>
                   <tr>
-                    <th>Order #</th>
-                    <th>Customer</th>
-                    <th>Body Type</th>
-                    <th>Salesperson</th>
-                    <th>Status</th>
-                    <th>Target Date</th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('order_number')}>Order #{sortArrow('order_number')}</button></th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('customer_name')}>Customer{sortArrow('customer_name')}</button></th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('body_type')}>Body Type{sortArrow('body_type')}</button></th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('salesperson')}>Salesperson{sortArrow('salesperson')}</button></th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('current_status')}>Status{sortArrow('current_status')}</button></th>
+                    <th><button type="button" className="sort-header-btn" onClick={() => toggleSort('target_completion_date')}>Target Date{sortArrow('target_completion_date')}</button></th>
                     <th style={{ width: 80 }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(order => (
+                  {sorted.map(order => (
                     <tr key={order.id} className={isOverdue(order) ? 'overdue-row' : ''}>
                       <td>
                         <Link
