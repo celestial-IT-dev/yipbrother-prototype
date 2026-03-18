@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import 'bootstrap/dist/js/bootstrap.bundle';
 import { useAuth } from '../../context/useAuth';
 import { ROLE_LABELS } from '../../lib/constants';
+import logo from './logo.png';
 
 declare global {
   interface Window {
@@ -40,7 +41,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Navbar ref={navbarRef} className="oms-navbar" expand="lg" sticky="top">
         <Container fluid="xl">
           <Navbar.Brand as={Link} to="/">
-            <img src="/logo.png" alt="Yip Brother Logo" className="brand-icon" />
+            <img src={logo} alt="Yip Brother Logo" className="brand-icon" />
             <span>Yip Brother <span style={{ fontWeight: 400, opacity: 0.6 }}>OMS</span></span>
           </Navbar.Brand>
 
