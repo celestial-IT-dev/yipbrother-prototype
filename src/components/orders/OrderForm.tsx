@@ -379,14 +379,14 @@ export default function OrderForm({ existingOrder, orderId }: Props) {
           </Button>
         ) : (
           <React.Fragment>
-            <Button variant="primary" onClick={() => handleSubmit('submit')} disabled={saving || isLocked}>
-              {saving ? 'Saving...' : orderId ? 'Update Order' : 'Submit Order'}
-            </Button>
             {!orderId && (
               <Button variant="outline-primary" onClick={() => handleSubmit('Draft')} disabled={saving || isLocked}>
                 Save as Draft
               </Button>
-          )}
+            )}
+            <Button variant="primary" onClick={() => handleSubmit('submit')} disabled={saving || isLocked}>
+              {saving ? 'Saving...' : orderId ? 'Update Order' : 'Submit Order'}
+            </Button>
           </React.Fragment>
         )}
       </div>
