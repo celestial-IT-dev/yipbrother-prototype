@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Badge, Spinner, Card, Row, Col } from 'react-bootstrap';
+import { Form, Button, Badge, Spinner, Card, Row, Col, InputGroup } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/useAuth';
@@ -54,6 +54,7 @@ export default function OrderList() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [search, setSearch] = useState('');
 
   // Initial load and re-load when statusFilter changes
   useEffect(() => {
@@ -68,11 +69,13 @@ export default function OrderList() {
     return () => { active = false; };
   }, [statusFilter, profile?.role, user?.id]);
 
-  const isOverdue = (order: OrderListItem) => {
-    if (!order.target_completion_date) return false;
-    if (([STATUSES.COMPLETED_CLOSED, STATUSES.CANCELLED] as string[]).includes(order.current_status)) return false;
-    return new Date(order.target_completion_date) < new Date();
-  };
+  // Called directly from event handlers (not from an effect)
+  async function applyFilter(nextFilter: string) {
+    setLoading(true);
+    const { data, error } = await buildQuery(nextFilter, profile?.role, user?.id);
+    if (!error && data) setOrders(data as unknown as OrderListItem[]);
+    setLoading(false);
+  }
 
   const filtered = orders.filter(o => {
     // Check role-based visibility
@@ -80,47 +83,68 @@ export default function OrderList() {
       return false;
     }
 
-    const orderNumber = o.order_number.toLowerCase();
-    const customerName = o.customer_name.toLowerCase();
-    const salespersonName = (o.profiles?.full_name || '').toLowerCase();
-    const bodyType = (o.body_type || '').toLowerCase();
-
-    if (orderNumberFilter && !orderNumber.includes(orderNumberFilter.toLowerCase())) {
-      return false;
-    }
-    if (customerFilter && !customerName.includes(customerFilter.toLowerCase())) {
-      return false;
-    }
-    if (salespersonFilter && !salespersonName.includes(salespersonFilter.toLowerCase())) {
-      return false;
-    }
-    if (bodyTypeFilter && !bodyType.includes(bodyTypeFilter.toLowerCase())) {
-      return false;
-    }
-    if (overdueOnly && !isOverdue(o)) {
-      return false;
-    }
-
-    if (targetFrom || targetTo) {
-      if (!o.target_completion_date) return false;
-      const targetDate = new Date(o.target_completion_date);
-      targetDate.setHours(0, 0, 0, 0);
-
-      if (targetFrom) {
-        const from = new Date(targetFrom);
-        from.setHours(0, 0, 0, 0);
-        if (targetDate < from) return false;
-      }
-
-      if (targetTo) {
-        const to = new Date(targetTo);
-        to.setHours(0, 0, 0, 0);
-        if (targetDate > to) return false;
-      }
-    }
-
-    return true;
+    // Check search filters
+    const salespersonName = o.profiles?.full_name || '';
+    return (
+      o.order_number.toLowerCase().includes(search.toLowerCase()) ||
+      o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+      salespersonName.toLowerCase().includes(search.toLowerCase())
+    );
   });
+
+  const isOverdue = (order: OrderListItem) => {
+    if (!order.target_completion_date) return false;
+    if (([STATUSES.COMPLETED_CLOSED, STATUSES.CANCELLED] as string[]).includes(order.current_status)) return false;
+    return new Date(order.target_completion_date) < new Date();
+  };
+
+  // const filtered = orders.filter(o => {
+  //   // Check role-based visibility
+  //   if (profile && !canUserSeeOrder(o.current_status, profile.role)) {
+  //     return false;
+  //   }
+
+  //   const orderNumber = o.order_number.toLowerCase();
+  //   const customerName = o.customer_name.toLowerCase();
+  //   const salespersonName = (o.profiles?.full_name || '').toLowerCase();
+  //   const bodyType = (o.body_type || '').toLowerCase();
+
+  //   if (orderNumberFilter && !orderNumber.includes(orderNumberFilter.toLowerCase())) {
+  //     return false;
+  //   }
+  //   if (customerFilter && !customerName.includes(customerFilter.toLowerCase())) {
+  //     return false;
+  //   }
+  //   if (salespersonFilter && !salespersonName.includes(salespersonFilter.toLowerCase())) {
+  //     return false;
+  //   }
+  //   if (bodyTypeFilter && !bodyType.includes(bodyTypeFilter.toLowerCase())) {
+  //     return false;
+  //   }
+  //   if (overdueOnly && !isOverdue(o)) {
+  //     return false;
+  //   }
+
+  //   if (targetFrom || targetTo) {
+  //     if (!o.target_completion_date) return false;
+  //     const targetDate = new Date(o.target_completion_date);
+  //     targetDate.setHours(0, 0, 0, 0);
+
+  //     if (targetFrom) {
+  //       const from = new Date(targetFrom);
+  //       from.setHours(0, 0, 0, 0);
+  //       if (targetDate < from) return false;
+  //     }
+
+  //     if (targetTo) {
+  //       const to = new Date(targetTo);
+  //       to.setHours(0, 0, 0, 0);
+  //       if (targetDate > to) return false;
+  //     }
+  //   }
+
+  //   return true;
+  // });
 
   const sorted = [...filtered].sort((a, b) => {
     const mult = sortDirection === 'asc' ? 1 : -1;
@@ -220,7 +244,43 @@ export default function OrderList() {
 
   return (
     <div>
-      <Card className="info-card mb-3 advanced-filter-card">
+      {/* Filters */}
+      <div className="d-flex flex-wrap gap-2 mb-3">
+        <InputGroup style={{ maxWidth: 300 }} className="search-bar">
+          <InputGroup.Text>🔍</InputGroup.Text>
+          <Form.Control
+            placeholder="Search order, customer..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </InputGroup>
+        <Form.Select
+          style={{ maxWidth: 240, fontSize: '0.875rem' }}
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          {Object.values(STATUSES).map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </Form.Select>
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          className="btn-modern"
+          onClick={() => {
+            setSearch('');
+            setStatusFilter('');
+            void applyFilter('');
+          }}
+        >
+          Reset
+        </Button>
+        <div className="ms-auto">
+          <small className="text-muted">{filtered.length} order{filtered.length !== 1 ? 's' : ''}</small>
+        </div>
+      </div>
+      {/* <Card className="info-card mb-3 advanced-filter-card">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <div>
@@ -328,7 +388,7 @@ export default function OrderList() {
             Showing {sorted.length} order{sorted.length !== 1 ? 's' : ''}
           </div>
         </Card.Body>
-      </Card>
+      </Card> */}
 
       {/* Table */}
       <Card className="info-card overflow-hidden">
