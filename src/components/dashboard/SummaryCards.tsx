@@ -164,9 +164,9 @@ export default function SummaryCards() {
       query = query.eq("is_archived", false);
 
       // For sales role, filter by salesperson_id
-      if (profile.role === ROLES.SALES && user) {
-        query = query.eq("salesperson_id", user.id);
-      }
+      // if (profile.role === ROLES.SALES && user) {
+      //   query = query.eq("salesperson_id", user.id);
+      // }
 
       const { data } = await query;
 
