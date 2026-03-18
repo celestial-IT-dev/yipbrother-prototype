@@ -345,7 +345,7 @@ export default function OrderDetailPage() {
         </Card.Body>
       </Card>
 
-      <Card className="info-card mb-3">
+      {/* <Card className="info-card mb-3">
         <Card.Header className="info-card-header">Admin Brief</Card.Header>
         <Card.Body>
           <Row className="g-3">
@@ -372,7 +372,7 @@ export default function OrderDetailPage() {
             </Col>
           </Row>
         </Card.Body>
-      </Card>
+      </Card> */}
 
       {successMsg && (
         <Alert variant="success" dismissible onClose={() => setSuccessMsg('')} className="alert-modern">
