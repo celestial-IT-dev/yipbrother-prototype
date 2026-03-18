@@ -411,48 +411,206 @@ main.app-main {
   background: #fff7ed;
 }
 
-/* --- Dashboard Summary Cards ----------------------------------- */
-.summary-card {
-  background: var(--surface);
+/* --- Dashboard Supply Chain Insights ---------------------------- */
+.supply-kpi-card {
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  transition: box-shadow 0.2s, transform 0.2s;
+  padding: 1rem 1.1rem;
   box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.summary-card:hover {
-  box-shadow: var(--shadow);
+.supply-kpi-card:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
-.summary-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-
-.summary-label {
-  font-size: 0.75rem;
-  font-weight: 600;
+.supply-kpi-label {
+  font-size: 0.73rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
 }
 
-.summary-value {
-  font-size: 1.75rem;
+.supply-kpi-value {
+  margin-top: 0.35rem;
+  font-size: 1.9rem;
   font-weight: 700;
   line-height: 1;
   color: var(--text);
+}
+
+.supply-kpi-hint {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.supply-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.supply-chart-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.supply-chart-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.supply-chart-total {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-3);
+  border-radius: 100px;
+  padding: 0.25rem 0.65rem;
+}
+
+.supply-stacked-bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-3);
+}
+
+.supply-stacked-segment {
+  height: 100%;
+  transition: width 0.35s ease;
+}
+
+.supply-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.supply-stage-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.supply-stage-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.supply-stage-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.supply-stage-meta {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+  .supply-kpi-value {
+    font-size: 1.6rem;
+  }
+
+  .supply-stage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Dashboard Operational Insights ----------------------------- */
+.ops-insights-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.ops-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.ops-insight-tile {
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.85rem;
+}
+
+.ops-insight-kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ops-insight-value {
+  margin-top: 0.3rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.ops-insight-meta {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ops-actions-panel {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.85rem;
+}
+
+.ops-actions-title {
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.45rem;
+}
+
+.ops-actions-list {
+  padding-left: 1.1rem;
+  margin-top: 0;
+}
+
+.ops-actions-list li {
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-bottom: 0.3rem;
+}
+
+.ops-actions-list li:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 576px) {
+  .ops-insight-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- File Upload / Drop Zone ---------------------------------- */

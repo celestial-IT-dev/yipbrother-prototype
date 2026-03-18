@@ -1,8 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import 'bootstrap/dist/js/bootstrap.bundle';
 import { useAuth } from '../../context/useAuth';
 import { ROLE_LABELS } from '../../lib/constants';
+
+declare global {
+  interface Window {
+    bootstrap: any;
+  }
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
@@ -11,6 +18,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const collapseRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navbarRef = useRef<HTMLElement>(null);
+
+  // Close mobile navbar after clicking outside the entire navbar component (mobile only)
+  useEffect(() => {
+    const navbarEl = navbarRef.current;
+    if (!navbarEl) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only work on mobile screens (below lg breakpoint = 992px)
+      if (window.innerWidth >= 992) return;
+      
+      // Only close if click is outside the navbar entirely
+      if (!navbarEl.contains(event.target as Node)) {
+        // Check if navbar is currently expanded before trying to collapse
+        const collapseEl = navbarEl.querySelector('.navbar-collapse');
+        if (collapseEl) {
+          const collapseInstance = window.bootstrap.Collapse.getInstance(collapseEl);
+          if (collapseInstance && collapseInstance._isShown) {
+            toggleRef.current?.click();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   async function handleSignOut() {
     await signOut();
