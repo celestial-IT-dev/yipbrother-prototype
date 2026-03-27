@@ -32,7 +32,7 @@ const WORKFLOW_STAGES = [
   // --- Engineering handoff ---
   {
     status: 'Order Released to Engineering',
-    role: 'engineer' as Role,
+    role: 'designer' as Role,
     icon: '🔧',
     desc: 'Sales releases order to Engineering team',
     handoff: true,
